@@ -66,6 +66,8 @@ const UserManagement = () => {
 
   useEffect(() => {
     if (success) {
+      dispatch(fetchActiveUsers());
+      dispatch(fetchInactiveUsers());
       setIsAddingUser(false);
       setConfirmModal(prev => ({ ...prev, isOpen: false }));
       const timer = setTimeout(() => dispatch(clearSuccess()), 3000);

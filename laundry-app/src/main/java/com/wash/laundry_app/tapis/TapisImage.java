@@ -25,4 +25,8 @@ public class TapisImage {
 
     @Column(name = "is_main")
     private Boolean isMain = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "image_type")
+    private TapisImageType imageType = TapisImageType.BEFORE;
 }

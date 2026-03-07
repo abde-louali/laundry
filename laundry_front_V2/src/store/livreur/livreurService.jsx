@@ -37,3 +37,27 @@ export const getReadyForDelivery = async () => {
 export const recordPayment = async (commandeId, data) => {
   return await api.post(`/livreur/commandes/${commandeId}/payment`, data)
 }
+
+// Upload tapis image
+export const uploadTapisImage = async (tapisId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await api.post(`/tapis/${tapisId}/images`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}
+
+// Upload tapis images (plural)
+export const uploadFiles = async (files) => {
+  const formData = new FormData();
+  files.forEach(file => {
+    formData.append('files', file);
+  });
+  return await api.post('/livreur/tapis/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+}

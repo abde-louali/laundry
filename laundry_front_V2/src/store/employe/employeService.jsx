@@ -21,3 +21,21 @@ export const patchCommandeStatus = async (id, data) => {
 export const patchTapisEtat = async (tapisId, data) => {
     return await api.patch(`/employe/commandes/tapis/${tapisId}/etat`, data)
 }
+
+// Add tapis images
+export const postTapisImages = async (tapisId, data) => {
+    return await api.post(`/employe/commandes/tapis/${tapisId}/images`, data)
+}
+
+// Upload tapis files
+export const uploadFiles = async (files) => {
+    const formData = new FormData();
+    files.forEach(file => {
+        formData.append('files', file);
+    });
+    return await api.post('/employe/tapis/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+}

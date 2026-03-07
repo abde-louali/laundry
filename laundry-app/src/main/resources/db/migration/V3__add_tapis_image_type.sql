@@ -1,0 +1,1 @@
+ALTER TABLE tapis_images ADD COLUMN image_type VARCHAR(20) DEFAULT 'BEFORE';

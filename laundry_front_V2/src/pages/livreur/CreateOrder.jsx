@@ -17,9 +17,14 @@ import {
   DollarSign,
   ClipboardCheck,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  Camera,
+  Image as ImageIcon,
+  X,
+  Star,
+  Phone
 } from 'lucide-react';
-import { createOrder } from '../../store/livreur/livreurThunk';
+import { createOrder, uploadImages } from '../../store/livreur/livreurThunk';
 import { selectLoading, selectPendingClient } from '../../store/livreur/livreurSelectors';
 
 export default function CreateOrder() {
@@ -35,8 +40,12 @@ export default function CreateOrder() {
     nom: '',
     description: '',
     prixUnitaire: '',
-    quantite: 1
+    quantite: 1,
+    imageUrls: [],
+    mainImageIndex: 0
   });
+
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!pendingClient && !loading?.pendingClient) {
@@ -55,13 +64,58 @@ export default function CreateOrder() {
       nom: newCarpet.nom,
       description: newCarpet.description,
       prixUnitaire: parseFloat(newCarpet.prixUnitaire),
-      quantite: parseInt(newCarpet.quantite)
+      quantite: parseInt(newCarpet.quantite),
+      imageUrls: newCarpet.imageUrls,
+      mainImageIndex: newCarpet.mainImageIndex
     };
 
     setCarpetItems([...carpetItems, carpet]);
     resetNewCarpet();
     setShowAddForm(false);
-    toast.success("Tapis ajouté");
+    toast.success("Tapis ajouté avec ses images");
+  };
+
+  const handleImageUpload = async (e, mode = 'gallery') => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploadingImage(true);
+    const uploadedUrls = [];
+
+    try {
+      const results = await dispatch(uploadImages(files)).unwrap();
+      const newUrls = results.map(r => r.imageUrl);
+
+      setNewCarpet(prev => ({
+        ...prev,
+        imageUrls: [...prev.imageUrls, ...newUrls]
+      }));
+      toast.success(`${files.length} image(s) ajoutée(s)`);
+    } catch (err) {
+      toast.error("Échec de l'upload: " + err);
+    } finally {
+      setUploadingImage(false);
+      e.target.value = null; // Reset input
+    }
+  };
+
+  const removeImage = (index) => {
+    setNewCarpet(prev => {
+      const newUrls = prev.imageUrls.filter((_, i) => i !== index);
+      let newMainIndex = prev.mainImageIndex;
+      if (index === prev.mainImageIndex) newMainIndex = 0;
+      else if (index < prev.mainImageIndex) newMainIndex--;
+
+      return {
+        ...prev,
+        imageUrls: newUrls,
+        mainImageIndex: Math.max(0, newMainIndex)
+      };
+    });
+  };
+
+  const setMainImage = (index) => {
+    setNewCarpet(prev => ({ ...prev, mainImageIndex: index }));
   };
 
   const resetNewCarpet = () => {
@@ -69,7 +123,9 @@ export default function CreateOrder() {
       nom: '',
       description: '',
       prixUnitaire: '',
-      quantite: 1
+      quantite: 1,
+      imageUrls: [],
+      mainImageIndex: 0
     });
   };
 
@@ -100,7 +156,9 @@ export default function CreateOrder() {
       nom: item.nom,
       description: item.description || '',
       prixUnitaire: item.prixUnitaire,
-      quantite: item.quantite
+      quantite: item.quantite,
+      imageUrls: item.imageUrls,
+      mainImageIndex: item.mainImageIndex
     }));
 
     try {
@@ -156,8 +214,16 @@ export default function CreateOrder() {
             </div>
 
             <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-              <MapPin size={18} className="text-laundry-fresh flex-shrink-0" />
-              <p className="text-xs font-bold text-white/70 uppercase tracking-tight line-clamp-1">{pendingClient.address}</p>
+              <MapPin size={14} className="text-white/40" />
+              <p className="text-xs font-bold text-white/70 uppercase tracking-tight line-clamp-1">
+                {pendingClient.addresses?.[0]?.address || 'Adresse non renseignée'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone size={14} className="text-white/40" />
+              <p className="text-xs font-bold text-white/70 uppercase tracking-tight">
+                {pendingClient.phones?.[0]?.phoneNumber || 'Téléphone non renseigné'}
+              </p>
             </div>
           </div>
         </div>
@@ -220,6 +286,56 @@ export default function CreateOrder() {
                 onChange={(e) => setNewCarpet({ ...newCarpet, description: e.target.value })}
                 className="w-full bg-laundry-sky/30 border-2 border-transparent focus:border-laundry-primary focus:bg-white p-4 rounded-2xl outline-none font-bold text-laundry-deep transition-all shadow-inner resize-none"
               />
+            </div>
+
+            {/* IMAGE UPLOAD SECTION */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <label className="text-[10px] font-black text-laundry-deep/40 uppercase tracking-widest">Photos du Tapis</label>
+                <span className="text-[10px] font-bold text-laundry-primary uppercase">{newCarpet.imageUrls.length} images</span>
+              </div>
+
+              <div className="flex gap-4">
+                <label className="flex-1 flex flex-col items-center justify-center gap-2 p-6 bg-laundry-sky/20 border-2 border-dashed border-laundry-sky rounded-3xl cursor-pointer hover:bg-laundry-sky/40 transition-all group">
+                  <div className="p-3 bg-white rounded-2xl text-laundry-primary group-hover:scale-110 transition-transform shadow-sm">
+                    <Camera size={24} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-laundry-deep/40">Appareil Photo</span>
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'camera')} />
+                </label>
+
+                <label className="flex-1 flex flex-col items-center justify-center gap-2 p-6 bg-laundry-sky/20 border-2 border-dashed border-laundry-sky rounded-3xl cursor-pointer hover:bg-laundry-sky/40 transition-all group">
+                  <div className="p-3 bg-white rounded-2xl text-laundry-primary group-hover:scale-110 transition-transform shadow-sm">
+                    <ImageIcon size={24} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-laundry-deep/40">Galerie</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImageUpload(e, 'gallery')} />
+                </label>
+              </div>
+
+              {/* THUMBNAILS PREVIEW */}
+              {newCarpet.imageUrls.length > 0 && (
+                <div className="grid grid-cols-4 gap-4 p-2">
+                  {newCarpet.imageUrls.map((url, idx) => (
+                    <div key={idx} className={`relative aspect-square rounded-2xl overflow-hidden border-2 ${newCarpet.mainImageIndex === idx ? 'border-laundry-primary shadow-lg' : 'border-transparent'}`}>
+                      <img src={`http://localhost:8080${url}`} alt="Preview" className="w-full h-full object-cover" />
+                      <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full shadow-md active:scale-90 transition-all">
+                        <X size={10} strokeWidth={4} />
+                      </button>
+                      <button onClick={() => setMainImage(idx)} className={`absolute bottom-1 left-1 p-1 rounded-full shadow-md active:scale-90 transition-all ${newCarpet.mainImageIndex === idx ? 'bg-yellow-400 text-white' : 'bg-white/50 text-white'}`}>
+                        <Star size={10} fill={newCarpet.mainImageIndex === idx ? 'currentColor' : 'none'} strokeWidth={3} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadingImage && (
+                <div className="flex items-center justify-center gap-2 py-4 text-laundry-primary">
+                  <div className="w-4 h-4 border-2 border-laundry-primary border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Upload en cours...</span>
+                </div>
+              )}
             </div>
 
             <button

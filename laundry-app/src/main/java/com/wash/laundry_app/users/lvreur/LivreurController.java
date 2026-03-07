@@ -5,12 +5,15 @@ import com.wash.laundry_app.clients.ClientDto;
 import com.wash.laundry_app.clients.ClientRegisterRequest;
 import com.wash.laundry_app.clients.ClientSearchResponse;
 import com.wash.laundry_app.command.*;
+import com.wash.laundry_app.tapis.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +26,7 @@ public class LivreurController {
     private final CommandeService commandeService;
     private final LivreurService livreurService;
     private final AuthService authService;
+    private final FileStorageService fileStorageService;
 
     // ========== CLIENT MANAGEMENT ==========
 
@@ -81,6 +85,17 @@ public class LivreurController {
             @Valid @RequestBody RecordPaymentRequest request) {
         CommandeDTO commande = commandeService.recordPayment(id, request);
         return ResponseEntity.ok(commande);
+    }
+
+    // ========== TAPIS IMAGE UPLOAD ==========
+    @PostMapping("/tapis/upload")
+    public ResponseEntity<List<Map<String, String>>> uploadTapisImages(@RequestParam("files") MultipartFile[] files) {
+        List<Map<String, String>> result = java.util.Arrays.stream(files).map(file -> {
+            String fileName = fileStorageService.storeFile(file);
+            String fileDownloadUri = "/uploads/" + fileName;
+            return Map.of("imageUrl", fileDownloadUri);
+        }).toList();
+        return ResponseEntity.ok(result);
     }
 
 }

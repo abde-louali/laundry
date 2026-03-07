@@ -16,7 +16,8 @@ import {
   Search,
   UserPlus,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  Trash2
 } from 'lucide-react';
 import { registerClient, searchClient } from '../../store/livreur/livreurThunk';
 import { selectLoading, selectSearchResult } from '../../store/livreur/livreurSelectors';
@@ -33,20 +34,20 @@ export default function RegisterClient() {
 
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
-    address: '',
-    latitude: '',
-    longitude: '',
+    phones: [{ phoneNumber: '' }],
+    addresses: [{ address: '', latitude: '', longitude: '', notes: '' }],
   });
 
-  const [isLocating, setIsLocating] = useState(false);
-
-  // Auto-fill phone from search if moving to register
+  // Helper for phone auto-fill
   useEffect(() => {
-    if (viewMode === 'register' && phoneQuery && !formData.phone) {
-      setFormData(prev => ({ ...prev, phone: phoneQuery }));
+    if (viewMode === 'register' && phoneQuery && formData.phones[0].phoneNumber === '') {
+      const newPhones = [...formData.phones];
+      newPhones[0].phoneNumber = phoneQuery;
+      setFormData(prev => ({ ...prev, phones: newPhones }));
     }
-  }, [viewMode, phoneQuery, formData.phone]);
+  }, [viewMode, phoneQuery, formData.phones]);
+
+  const [isLocating, setIsLocating] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -96,7 +97,7 @@ export default function RegisterClient() {
 
   const handleSubmitRegister = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone || !formData.address) {
+    if (!formData.name || formData.phones[0].phoneNumber === '' || formData.addresses[0].address === '') {
       toast.error("Veuillez remplir les champs obligatoires");
       return;
     }
@@ -108,6 +109,69 @@ export default function RegisterClient() {
     } catch (err) {
       toast.error(err || "Erreur lors de l'enregistrement");
     }
+  };
+
+  const addPhoneField = () => {
+    setFormData(prev => ({
+      ...prev,
+      phones: [...prev.phones, { phoneNumber: '' }]
+    }));
+  };
+
+  const removePhoneField = (index) => {
+    if (formData.phones.length > 1) {
+      const newPhones = formData.phones.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, phones: newPhones }));
+    }
+  };
+
+  const updatePhoneField = (index, value) => {
+    const newPhones = [...formData.phones];
+    newPhones[index].phoneNumber = value;
+    setFormData(prev => ({ ...prev, phones: newPhones }));
+  };
+
+  const addAddressField = () => {
+    setFormData(prev => ({
+      ...prev,
+      addresses: [...prev.addresses, { address: '', latitude: '', longitude: '', notes: '' }]
+    }));
+  };
+
+  const removeAddressField = (index) => {
+    if (formData.addresses.length > 1) {
+      const newAddresses = formData.addresses.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, addresses: newAddresses }));
+    }
+  };
+
+  const updateAddressField = (index, field, value) => {
+    const newAddresses = [...formData.addresses];
+    newAddresses[index][field] = value;
+    setFormData(prev => ({ ...prev, addresses: newAddresses }));
+  };
+
+  const handleSetCurrentLocation = (index) => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      toast.error("Géolocalisation non supportée");
+      setIsLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        updateAddressField(index, 'latitude', position.coords.latitude.toString());
+        updateAddressField(index, 'longitude', position.coords.longitude.toString());
+        setIsLocating(false);
+        toast.success("Position capturée !");
+      },
+      (error) => {
+        toast.error("Erreur de géolocalisation");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   return (
@@ -182,12 +246,18 @@ export default function RegisterClient() {
                   <div className="space-y-1">
                     <span className="text-[10px] font-black text-laundry-primary uppercase tracking-widest">Client Trouvé</span>
                     <h3 className="text-2xl font-black text-laundry-deep uppercase tracking-tighter leading-none">{searchResult.name}</h3>
-                    <p className="text-[10px] font-bold text-laundry-deep/40 uppercase tracking-widest flex items-center gap-1">
-                      <Phone size={10} /> {searchResult.phone}
-                    </p>
-                    <p className="text-[10px] font-bold text-laundry-deep/40 uppercase tracking-widest flex items-center gap-1">
-                      <MapPin size={10} /> {searchResult.address}
-                    </p>
+                    <div className="space-y-1">
+                      {searchResult.phones?.map((p, i) => (
+                        <p key={i} className="text-[10px] font-bold text-laundry-deep/40 uppercase tracking-widest flex items-center gap-1">
+                          <Phone size={10} /> {p.phoneNumber}
+                        </p>
+                      ))}
+                      {searchResult.addresses?.map((a, i) => (
+                        <p key={i} className="text-[10px] font-bold text-laundry-deep/40 uppercase tracking-widest flex items-center gap-1">
+                          <MapPin size={10} /> {a.address}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -224,22 +294,6 @@ export default function RegisterClient() {
               <p className="text-[10px] font-black text-laundry-deep/30 uppercase tracking-[0.2em]">Enregistrez les détails du ramassage</p>
             </div>
 
-            {/* GPS MAP CONTEXT (Mini version) */}
-            <div className="h-48 bg-laundry-sky/50 rounded-[2.5rem] p-6 relative overflow-hidden flex flex-col justify-end">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20">
-                <MapPin size={64} className="text-laundry-primary" />
-              </div>
-              <button
-                type="button"
-                onClick={handleGetLocation}
-                disabled={isLocating}
-                className={`relative z-10 w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95 ${formData.latitude ? 'bg-green-500 text-white' : 'bg-laundry-primary text-white'}`}
-              >
-                {isLocating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Locate size={18} strokeWidth={3} />}
-                <span>{formData.latitude ? 'Position Capturée' : 'Capturer GPS'}</span>
-              </button>
-            </div>
-
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-laundry-deep/30 px-2 uppercase tracking-widest">Nom Complet</label>
@@ -249,20 +303,65 @@ export default function RegisterClient() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-laundry-deep/30 px-2 uppercase tracking-widest">Téléphone</label>
-                <div className="relative">
-                  <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-laundry-primary" size={18} />
-                  <input type="tel" placeholder="06XXXXXXXX" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-white border-2 border-laundry-sky/50 focus:border-laundry-primary p-5 pl-14 rounded-2xl font-bold outline-none transition-all shadow-sm" />
+              {/* PHONES SECTION */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <label className="text-[10px] font-black text-laundry-deep/30 uppercase tracking-widest">Numéros de Téléphone</label>
+                  <button type="button" onClick={addPhoneField} className="text-laundry-primary p-1 hover:bg-laundry-sky rounded-lg transition-colors">
+                    <PlusCircle size={20} />
+                  </button>
                 </div>
+                {formData.phones.map((phone, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 text-laundry-primary" size={18} />
+                      <input type="tel" placeholder="06XXXXXXXX" value={phone.phoneNumber} onChange={e => updatePhoneField(index, e.target.value)} className="w-full bg-white border-2 border-laundry-sky/50 focus:border-laundry-primary p-5 pl-14 rounded-2xl font-bold outline-none transition-all shadow-sm" />
+                    </div>
+                    {formData.phones.length > 1 && (
+                      <button type="button" onClick={() => removePhoneField(index)} className="p-3 text-red-400 hover:text-red-600 transition-colors">
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-laundry-deep/30 px-2 uppercase tracking-widest">Adresse Physique</label>
-                <div className="relative">
-                  <Navigation className="absolute left-5 top-5 text-laundry-primary" size={18} />
-                  <textarea rows="3" placeholder="Quartier, Rue, Immeuble..." value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full bg-white border-2 border-laundry-sky/50 focus:border-laundry-primary p-5 pl-14 rounded-2xl font-bold outline-none transition-all shadow-sm resize-none" />
+              {/* ADDRESSES SECTION */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                  <label className="text-[10px] font-black text-laundry-deep/30 uppercase tracking-widest">Adresses de Ramassage/Livraison</label>
+                  <button type="button" onClick={addAddressField} className="text-laundry-primary p-1 hover:bg-laundry-sky rounded-lg transition-colors">
+                    <PlusCircle size={20} />
+                  </button>
                 </div>
+                {formData.addresses.map((address, index) => (
+                  <div key={index} className="bg-laundry-sky/20 p-4 rounded-[2rem] space-y-4 border border-laundry-sky/50 relative">
+                    {formData.addresses.length > 1 && (
+                      <button type="button" onClick={() => removeAddressField(index)} className="absolute top-4 right-4 p-2 text-red-400 hover:text-red-600 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-laundry-deep/30 uppercase tracking-widest ml-2">Adresse {index + 1}</label>
+                      <div className="relative">
+                        <Navigation className="absolute left-5 top-5 text-laundry-primary" size={18} />
+                        <textarea rows="2" placeholder="Quartier, Rue, Immeuble..." value={address.address} onChange={e => updateAddressField(index, 'address', e.target.value)} className="w-full bg-white border-2 border-laundry-sky/50 focus:border-laundry-primary p-5 pl-14 rounded-2xl font-bold outline-none transition-all shadow-sm resize-none" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-laundry-deep/30 uppercase tracking-widest ml-2">Notes (facultatif)</label>
+                      <input type="text" placeholder="Ex: 2ème étage, porte gauche" value={address.notes} onChange={e => updateAddressField(index, 'notes', e.target.value)} className="w-full bg-white border-2 border-laundry-sky/50 focus:border-laundry-primary p-4 rounded-xl font-bold outline-none transition-all shadow-sm" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSetCurrentLocation(index)}
+                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black uppercase tracking-widest text-[9px] shadow-md transition-all active:scale-95 ${address.latitude ? 'bg-green-500 text-white' : 'bg-laundry-primary text-white'}`}
+                    >
+                      <Locate size={14} />
+                      <span>{address.latitude ? 'Position GPS Capturée' : 'Utiliser ma position actuelle'}</span>
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 

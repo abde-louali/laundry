@@ -106,11 +106,15 @@ export default function DeliveryDetails() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3 text-laundry-deep/60">
                 <MapPin size={16} className="text-laundry-primary" strokeWidth={3} />
-                <span className="text-[11px] font-bold uppercase tracking-tight line-clamp-1">{order.client.address}</span>
+                <span className="text-[11px] font-bold uppercase tracking-tight line-clamp-1">
+                  {order.client.addresses?.[0]?.address || 'Adresse non renseignée'}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-laundry-deep/60">
                 <Phone size={16} className="text-laundry-primary" strokeWidth={3} />
-                <span className="text-[11px] font-bold uppercase tracking-tight">{order.client.phone}</span>
+                <span className="text-[11px] font-bold uppercase tracking-tight">
+                  {order.client.phones?.[0]?.phoneNumber || 'Téléphone non renseigné'}
+                </span>
               </div>
             </div>
           </div>

@@ -7,7 +7,8 @@ import {
   createCommande,
   getReadyForDelivery,
   recordPayment,
-  addClient
+  addClient,
+  uploadFiles
 } from './livreurService'
 
 // ========== CLIENT THUNKS ==========
@@ -100,3 +101,15 @@ export const submitPayment = createAsyncThunk(
     }
   }
 )
+
+export const uploadImages = createAsyncThunk(
+  'livreur/uploadImages',
+  async (files, { rejectWithValue }) => {
+    try {
+      const response = await uploadFiles(files);
+      return response.data; // Array of { imageUrl: "..." }
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Erreur lors de l'upload des images");
+    }
+  }
+);

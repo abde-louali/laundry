@@ -16,6 +16,9 @@ public class EmployeController {
 
         private final EmployeService employeService;
         private final CommandeService commandeService;
+        private final com.wash.laundry_app.tapis.TapisService tapisService;
+        private final com.wash.laundry_app.tapis.FileStorageService fileStorageService;
+
         @GetMapping("/commandes")
         public ResponseEntity<List<CommandDtoEmploye>> allCommandes() {
             List<CommandDtoEmploye> commandes = employeService.getCommands();
@@ -39,7 +42,22 @@ public class EmployeController {
     public ResponseEntity<CommandeTapisDTO> updateTapisEtat(
             @PathVariable Long id,
             @Valid @RequestBody UpdateTapisEtatRequest request) {
-        return ResponseEntity.ok(commandeService.updateTapisEtat(id, request));
+        return ResponseEntity.ok(commandeService.updateTapisEtat(id, request));}
+    @PostMapping("/commandes/tapis/{id}/images")
+    public ResponseEntity<com.wash.laundry_app.tapis.TapisDTO> addTapisImages(
+            @PathVariable Long id,
+            @Valid @RequestBody com.wash.laundry_app.tapis.AddTapisImagesRequest request) {
+        return ResponseEntity.ok(tapisService.addImages(id, request.getImageUrls(), request.getType()));
+    }
+
+    @PostMapping("/tapis/upload")
+    public ResponseEntity<List<java.util.Map<String, String>>> uploadTapisImages(@RequestParam("files") org.springframework.web.multipart.MultipartFile[] files) {
+        List<java.util.Map<String, String>> result = java.util.Arrays.stream(files).map(file -> {
+            String fileName = fileStorageService.storeFile(file);
+            String fileDownloadUri = "/uploads/" + fileName;
+            return java.util.Map.of("imageUrl", fileDownloadUri);
+        }).toList();
+        return ResponseEntity.ok(result);
     }
 }
 

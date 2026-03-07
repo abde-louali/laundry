@@ -11,9 +11,11 @@ import java.util.Optional;
 @Repository
 public interface ClientRepository extends JpaRepository<Client, Long> {
 
-    Optional<Client> findByPhone(String phone);
+    @Query("SELECT c FROM Client c JOIN c.phones p WHERE p.phoneNumber = :phone")
+    Optional<Client> findByPhone(@Param("phone") String phone);
 
-    boolean existsByPhone(String phone);
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Client c JOIN c.phones p WHERE p.phoneNumber = :phone")
+    boolean existsByPhone(@Param("phone") String phone);
 
     List<Client> findByNameContainingIgnoreCase(String name);
 

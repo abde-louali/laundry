@@ -61,4 +61,22 @@ public class TapisService {
                 .orElseThrow(() -> new RuntimeException("Tapis non trouvé"));
         tapisRepository.delete(tapis);
     }
+    // Add images to tapis
+    @Transactional
+    public TapisDTO addImages(Long id, List<String> imageUrls, TapisImageType type) {
+        Tapis tapis = tapisRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tapis non trouvé"));
+
+        for (String url : imageUrls) {
+            TapisImage image = new TapisImage();
+            image.setTapis(tapis);
+            image.setImageUrl(url);
+            image.setImageType(type);
+            image.setIsMain(false);
+            tapis.getImages().add(image);
+        }
+
+        tapis = tapisRepository.save(tapis);
+        return tapisMapper.toDto(tapis);
+    }
 }

@@ -3,7 +3,9 @@ import {
     getAllCommandes,
     getCommandeById,
     patchCommandeStatus,
-    patchTapisEtat
+    patchTapisEtat,
+    postTapisImages,
+    uploadFiles as uploadFilesService
 } from './employeService'
 
 // ========== COMMANDE THUNKS ==========
@@ -55,3 +57,29 @@ export const updateTapisEtat = createAsyncThunk(
         }
     }
 )
+
+export const addTapisImages = createAsyncThunk(
+    'employe/addTapisImages',
+    async ({ tapisId, imageUrls, type }, { rejectWithValue }) => {
+        try {
+            const response = await postTapisImages(tapisId, { imageUrls, type })
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Erreur lors de l'ajout des images")
+        }
+    }
+)
+
+export const uploadEmployeImages = createAsyncThunk(
+    'employe/uploadImages',
+    async (files, { rejectWithValue }) => {
+        try {
+            const response = await uploadFilesService(files)
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Erreur lors de l'upload des images")
+        }
+    }
+)
+
+

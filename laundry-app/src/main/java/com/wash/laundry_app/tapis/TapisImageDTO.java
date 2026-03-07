@@ -14,4 +14,5 @@ public class TapisImageDTO {
     private Long id;
     private String imageUrl;
     private Boolean isMain;
+    private TapisImageType imageType;
 }

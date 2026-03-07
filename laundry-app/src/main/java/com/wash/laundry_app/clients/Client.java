@@ -9,6 +9,8 @@ import org.w3c.dom.Text;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "clients")
@@ -24,30 +26,20 @@ public class Client {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "phone", length = 20)
-    private String phone;
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ClientPhone> phones = new ArrayList<>();
 
-    @Column(name = "address", columnDefinition = "TEXT")
-    private String address;
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ClientAddress> addresses = new ArrayList<>();
 
-    @Column(precision = 10, scale = 8)
-    private BigDecimal latitude;
-
-    @Column(precision = 11, scale = 8)
-    private BigDecimal longitude;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_livreur_id", nullable = false)
-    private User createdByLivreur;
-
-    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_livreur_id", nullable = false)
+    private User createdByLivreur;
 
     @PrePersist
     protected void onCreate() {

@@ -30,8 +30,11 @@ public class LivreurService {
     public ClientDto createClient(ClientRegisterRequest request) {
         var user = authService.currentUser();
 
-        if (clientRepository.existsByPhone(request.getPhone())) {
-            throw new ClientExistException("Un client avec ce numéro existe déjà");
+        if (request.getPhones() != null && !request.getPhones().isEmpty()) {
+            String firstPhone = request.getPhones().get(0).getPhoneNumber();
+            if (clientRepository.existsByPhone(firstPhone)) {
+                throw new ClientExistException("Un client avec ce numéro existe déjà: " + firstPhone);
+            }
         }
 
         Optional<Client> pendingClient = clientRepository.findPendingClientByLivreur(user.getId());
@@ -45,9 +48,18 @@ public class LivreurService {
 
         Client newClient = clientMapper.toEntity(request);
         newClient.setCreatedByLivreur(user);
-        newClient = clientRepository.save(newClient);
 
-        return clientMapper.toDto(newClient);
+        // Bi-directional mapping logic
+        if (newClient.getPhones() != null) {
+            newClient.getPhones().forEach(phone -> phone.setClient(newClient));
+        }
+        if (newClient.getAddresses() != null) {
+            newClient.getAddresses().forEach(address -> address.setClient(newClient));
+        }
+
+        Client savedClient = clientRepository.save(newClient);
+
+        return clientMapper.toDto(savedClient);
     }
 
     // Search by phone

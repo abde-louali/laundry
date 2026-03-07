@@ -3,7 +3,8 @@ import {
     fetchAllCommandes,
     fetchCommandeById,
     updateCommandeStatus,
-    updateTapisEtat
+    updateTapisEtat,
+    addTapisImages
 } from './employeThunk'
 
 // Enum constants for use in components
@@ -130,6 +131,28 @@ const employeSlice = createSlice({
                 }
             })
             .addCase(updateTapisEtat.rejected, (state, action) => {
+                state.loading.updateTapis = false
+                state.error.updateTapis = action.payload
+            })
+
+        // ===== ADD TAPIS IMAGES =====
+        builder
+            .addCase(addTapisImages.pending, (state) => {
+                state.loading.updateTapis = true
+            })
+            .addCase(addTapisImages.fulfilled, (state, action) => {
+                state.loading.updateTapis = false
+                // Update specific tapis in selectedCommande
+                if (state.selectedCommande) {
+                    const tapisIdx = state.selectedCommande.commandeTapis?.findIndex(
+                        t => t.tapis?.id === action.payload.id
+                    )
+                    if (tapisIdx !== undefined && tapisIdx !== -1) {
+                        state.selectedCommande.commandeTapis[tapisIdx].tapis = action.payload
+                    }
+                }
+            })
+            .addCase(addTapisImages.rejected, (state, action) => {
                 state.loading.updateTapis = false
                 state.error.updateTapis = action.payload
             })
