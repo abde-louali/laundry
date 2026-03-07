@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: laundry-app
+  datasource:
+    url: ${DATASOURCE_URL}
+    username: ${DATASOURCE_USERNAME}
+    password: ${DATASOURCE_PASSWORD}
+  jpa:
+    show-sql: true
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 120000     # 5 minutes
+    refresh-token-expiration: 604800  # 7 days
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+webSiteUrl: ${WEBSITE_URL}
+

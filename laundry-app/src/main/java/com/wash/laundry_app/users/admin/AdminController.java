@@ -1,0 +1,305 @@
+package com.wash.laundry_app.users.admin;
+
+import com.wash.laundry_app.clients.ClientDto;
+import com.wash.laundry_app.command.CommandeDTO;
+import com.wash.laundry_app.statistiques.DailyStatisticsDTO;
+import com.wash.laundry_app.statistiques.DateRangeRequest;
+import com.wash.laundry_app.statistiques.StatisticsDTO;
+import com.wash.laundry_app.statistiques.StatisticsService;
+import com.wash.laundry_app.users.*;
+import com.wash.laundry_app.users.employe.CommandDetails;
+import com.wash.laundry_app.users.employe.CommandDtoEmploye;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@AllArgsConstructor
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+
+    private final AdminService adminService;
+    private final StatisticsService statisticsService;
+
+    @PostMapping("create-user")
+    public ResponseEntity<UserDto> createUser(@RequestBody @Valid UserRegisterRequest request, UriComponentsBuilder uriBuilder){
+        return adminService.createUser(request,uriBuilder);
+    }
+
+    @PutMapping("update-user/{id}")
+    public UserDto updateUser(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request){
+        return adminService.updateUser(id,request);
+    }
+
+    @GetMapping("user/{id}")
+    public UserDto getUser(@PathVariable Long id){
+        return adminService.getSingleUser(id);
+    }
+
+    @GetMapping("active-users")
+    public List<UserDto> activeUsers(){
+        return adminService.getAllActiveUsers();
+    }
+
+    @GetMapping("inactive-users")
+    public List<UserDto> inActiveUsers(){
+        return adminService.getAllInActiveUsers();
+    }
+
+    @PatchMapping("inactive-user/{id}")
+    public void inActiveUser(@PathVariable Long id){
+        adminService.inActive(id);
+    }
+
+    @PatchMapping("active-user/{id}")
+    public void activeUser(@PathVariable Long id){
+        adminService.activateUser(id);
+    }
+
+    @DeleteMapping("delete-user/{id}")
+    public void deleteInActiveUser(@PathVariable Long id){
+        adminService.deleteUser(id);
+    }
+
+//    get all commandes
+    @GetMapping("/commandes")
+    public ResponseEntity<List<CommandSummaryDto>> allCommandes() {
+        List<CommandSummaryDto> commandes = adminService.getCommands();
+        return ResponseEntity.ok(commandes);
+    }
+
+    // Get commande details
+    @GetMapping("/commandes/{id}")
+    public ResponseEntity<CommandeDTO> getCommande(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getCommandeById(id));
+    }
+
+    // Get clients
+    @GetMapping("/clients")
+    public ResponseEntity<List<ClientDto>> getClients() {
+        List<ClientDto> clients = adminService.getClients();
+        return ResponseEntity.ok(clients);
+    }
+
+
+    // Get client commands
+    @GetMapping("/client/{id}")
+    public ResponseEntity<List<CommandSummaryDto>> getClients(@PathVariable  Long id) {
+        List<CommandSummaryDto> commandes = adminService.getClientCommandes(id);
+        return ResponseEntity.ok(commandes);
+    }
+
+    // ========== STATISTICS ENDPOINTS ==========
+
+    // Get today's statistics
+    @GetMapping("/statistics/today")
+    public ResponseEntity<StatisticsDTO> getTodayStatistics() {
+        return ResponseEntity.ok(statisticsService.getTodayStatistics());
+    }
+
+//    {
+//        "totalCommandesToday": 1,
+//            "revenuesToday": 0,
+//            "commandesEnAttente": 0,
+//            "commandesValidees": 0,
+//            "commandesEnTraitement": 0,
+//            "commandesPretes": 1,
+//            "commandesLivrees": 0,
+//            "commandesPayees": 0,
+//            "totalCommandes": null,
+//            "totalRevenues": null,
+//            "commandesByStatus": null,
+//            "dateDebut": "2026-02-26",
+//            "dateFin": "2026-02-26"
+//    }
+
+    // Get overall statistics
+    @GetMapping("/statistics/overall")
+    public ResponseEntity<StatisticsDTO> getOverallStatistics() {
+        return ResponseEntity.ok(statisticsService.getOverallStatistics());
+    }
+
+//    {
+//        "totalCommandesToday": null,
+//            "revenuesToday": null,
+//            "commandesEnAttente": 0,
+//            "commandesValidees": 0,
+//            "commandesEnTraitement": 0,
+//            "commandesPretes": 2,
+//            "commandesLivrees": 0,
+//            "commandesPayees": 3,
+//            "totalCommandes": 5,
+//            "totalRevenues": 2822.00,
+//            "commandesByStatus": {
+//        "payee": 3,
+//                "en_traitement": 0,
+//                "livree": 0,
+//                "en_attente": 0,
+//                "validee": 0,
+//                "prete": 2,
+//                "annulee": 0
+//    },
+//        "dateDebut": null,
+//            "dateFin": null
+//    }
+//
+    // Get statistics by date range
+    @PostMapping("/statistics/date-range")
+    public ResponseEntity<StatisticsDTO> getStatisticsByDateRange(
+            @Valid @RequestBody DateRangeRequest request) {
+        return ResponseEntity.ok(
+                statisticsService.getStatisticsByDateRange(request.getDateDebut(), request.getDateFin())
+        );
+    }
+
+//    {
+//        "totalCommandesToday": null,
+//            "revenuesToday": null,
+//            "commandesEnAttente": 0,
+//            "commandesValidees": 0,
+//            "commandesEnTraitement": 0,
+//            "commandesPretes": 2,
+//            "commandesLivrees": 0,
+//            "commandesPayees": 3,
+//            "totalCommandes": 5,
+//            "totalRevenues": 2822.00,
+//            "commandesByStatus": {
+//        "payee": 3,
+//                "en_traitement": 0,
+//                "livree": 0,
+//                "en_attente": 0,
+//                "validee": 0,
+//                "prete": 2,
+//                "annulee": 0
+//    },
+//        "dateDebut": "2026-02-20",
+//            "dateFin": "2026-02-26"
+//    }
+
+
+    // Get statistics by date range (GET alternative)
+    @GetMapping("/statistics/date-range")
+    public ResponseEntity<StatisticsDTO> getStatisticsByDateRangeGet(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
+        return ResponseEntity.ok(statisticsService.getStatisticsByDateRange(dateDebut, dateFin));
+    }
+
+
+//    {
+//        "totalCommandesToday": null,
+//            "revenuesToday": null,
+//            "commandesEnAttente": 0,
+//            "commandesValidees": 0,
+//            "commandesEnTraitement": 0,
+//            "commandesPretes": 2,
+//            "commandesLivrees": 0,
+//            "commandesPayees": 3,
+//            "totalCommandes": 5,
+//            "totalRevenues": 2822.00,
+//            "commandesByStatus": {
+//        "payee": 3,
+//                "en_traitement": 0,
+//                "livree": 0,
+//                "en_attente": 0,
+//                "validee": 0,
+//                "prete": 2,
+//                "annulee": 0
+//    },
+//        "dateDebut": "2026-02-20",
+//            "dateFin": "2026-02-26"
+//    }
+
+    // Get daily statistics for specific date
+    @GetMapping("/statistics/daily")
+    public ResponseEntity<DailyStatisticsDTO> getDailyStatistics(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(statisticsService.getDailyStatistics(date));
+    }
+
+    //    {
+//        "date": "2026-02-21",
+//            "nombreCommandes": 1,
+//            "revenusTotal": 2822.0,
+//            "nombreTapisTraites": 0
+//    }
+//
+
+    // Get last N days statistics
+    @GetMapping("/statistics/last-days")
+    public ResponseEntity<List<DailyStatisticsDTO>> getLastNDaysStatistics(
+            @RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(statisticsService.getLastNDaysStatistics(days));
+    }
+
+//    [
+//    {
+//        "date": "2026-02-20",
+//            "nombreCommandes": 3,
+//            "revenusTotal": 0,
+//            "nombreTapisTraites": 0
+//    },
+//    {
+//        "date": "2026-02-21",
+//            "nombreCommandes": 1,
+//            "revenusTotal": 2822.0,
+//            "nombreTapisTraites": 0
+//    },
+//    {
+//        "date": "2026-02-22",
+//            "nombreCommandes": 0,
+//            "revenusTotal": 0,
+//            "nombreTapisTraites": 0
+//    }]
+
+    // Get statistics by livreur
+    @GetMapping("/statistics/livreur/{livreurId}")
+    public ResponseEntity<StatisticsDTO> getStatisticsByLivreur(
+            @PathVariable Long livreurId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
+        return ResponseEntity.ok(
+                statisticsService.getStatisticsByLivreur(livreurId, dateDebut, dateFin)
+        );
+    }
+//
+//    {
+//        "totalCommandesToday": null,
+//            "revenuesToday": null,
+//            "commandesEnAttente": null,
+//            "commandesValidees": null,
+//            "commandesEnTraitement": null,
+//            "commandesPretes": null,
+//            "commandesLivrees": null,
+//            "commandesPayees": null,
+//            "totalCommandes": 3,
+//            "totalRevenues": 1582.00,
+//            "commandesByStatus": null,
+//            "dateDebut": "2026-02-20",
+//            "dateFin": "2026-02-26"
+//    }
+//
+
+    @ExceptionHandler(ForbiddenAdminErrorsException.class)
+    public ResponseEntity<?> handleAdminForbiden(){
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("you can't made changes on this user");
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(){
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("user not found");
+    }
+
+    @ExceptionHandler(InvalidCredintialsException.class)
+    public ResponseEntity<?> handlecredinrials(){
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("invalid email");
+    }
+}
