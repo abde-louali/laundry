@@ -71,19 +71,54 @@ public class LivreurController {
         return ResponseEntity.status(HttpStatus.CREATED).body(commande);
     }
 
-    // Get orders ready for delivery (status = PRETE)
+    // Get orders ready for delivery (status = LIVREE / Sorti)
     @GetMapping("/commandes/ready-for-delivery")
     public ResponseEntity<List<CommandeDTO>> getReadyForDelivery() {
         List<CommandeDTO> commandes = commandeService.getReadyForDeliveryByLivreur();
         return ResponseEntity.ok(commandes);
     }
 
-    //  Record payment (change LIVREE → PAYEE)
+    // Record payment (change LIVREE -> PAYEE)
     @PostMapping("/commandes/{id}/payment")
     public ResponseEntity<CommandeDTO> recordPayment(
             @PathVariable Long id,
             @Valid @RequestBody RecordPaymentRequest request) {
         CommandeDTO commande = commandeService.recordPayment(id, request);
+        return ResponseEntity.ok(commande);
+    }
+
+    // Cancel delivery (change LIVREE -> ANNULEE)
+    @PatchMapping("/commandes/{id}/cancel")
+    public ResponseEntity<CommandeDTO> cancelDelivery(@PathVariable Long id) {
+        CommandeDTO commande = commandeService.cancelDelivery(id);
+        return ResponseEntity.ok(commande);
+    }
+
+    // Get count of prete orders (notification badge)
+    @GetMapping("/commandes/prete-count")
+    public ResponseEntity<Map<String, Long>> getPreteCount() {
+        long count = commandeService.getPreteCountForLivreur();
+        return ResponseEntity.ok(Map.of("readyOrdersCount", count));
+    }
+
+    // Get list of prete orders (detailed notifications)
+    @GetMapping("/commandes/prete")
+    public ResponseEntity<List<CommandeDTO>> getReadyOrders() {
+        List<CommandeDTO> commandes = commandeService.getReadyOrdersForLivreur();
+        return ResponseEntity.ok(commandes);
+    }
+
+    // Get canceled deliveries for the livreur (status = ANNULEE)
+    @GetMapping("/commandes/canceled-deliveries")
+    public ResponseEntity<List<CommandeDTO>> getCanceledDeliveries() {
+        List<CommandeDTO> commandes = commandeService.getCanceledDeliveriesByLivreur();
+        return ResponseEntity.ok(commandes);
+    }
+
+    // Return to workplace (change ANNULEE -> EN_ATTENTE)
+    @PatchMapping("/commandes/{id}/return")
+    public ResponseEntity<CommandeDTO> returnToWorkplace(@PathVariable Long id) {
+        CommandeDTO commande = commandeService.returnToWorkplace(id);
         return ResponseEntity.ok(commande);
     }
 

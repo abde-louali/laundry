@@ -38,6 +38,31 @@ export const recordPayment = async (commandeId, data) => {
   return await api.post(`/livreur/commandes/${commandeId}/payment`, data)
 }
 
+// Cancel delivery
+export const cancelDeliveryApi = async (commandeId) => {
+  return await api.patch(`/livreur/commandes/${commandeId}/cancel`)
+}
+
+// Get canceled deliveries
+export const getCanceledDeliveries = async () => {
+  return await api.get('/livreur/commandes/canceled-deliveries')
+}
+
+// Return order to workplace
+export const returnToWorkplaceApi = async (commandeId) => {
+  return await api.patch(`/livreur/commandes/${commandeId}/return`)
+}
+
+// Get count of prete orders (for notification badge)
+export const getPreteCount = async () => {
+  return await api.get('/livreur/commandes/prete-count')
+}
+
+// Get list of prete orders (for notification dropdown)
+export const getReadyOrders = async () => {
+  return await api.get('/livreur/commandes/prete')
+}
+
 // Upload tapis image
 export const uploadTapisImage = async (tapisId, file) => {
   const formData = new FormData();

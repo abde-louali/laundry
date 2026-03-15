@@ -23,4 +23,5 @@ public class CommandeTapisDTO {
     private TapisEtat etat;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private java.util.List<com.wash.laundry_app.tapis.TapisImageDTO> tapisImages;
 }

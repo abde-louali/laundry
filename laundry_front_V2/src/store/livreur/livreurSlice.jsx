@@ -1,4 +1,3 @@
-// src/store/livreur/livreurSlice.js
 import { createSlice } from '@reduxjs/toolkit'
 import {
   fetchPendingClient,
@@ -7,8 +6,24 @@ import {
   deleteClient,
   createOrder,
   fetchReadyForDelivery,
-  submitPayment
+  submitPayment,
+  cancelDelivery,
+  fetchCanceledDeliveries,
+  returnToWorkplace,
+  fetchPreteCount,
+  fetchReadyOrders
 } from './livreurThunk'
+
+export const COMMANDE_STATUS = {
+  EN_ATTENTE: 'en_attente',
+  VALIDEE: 'validee',
+  EN_TRAITEMENT: 'en_traitement',
+  PRETE: 'prete',
+  LIVREE: 'livree',
+  PAYEE: 'payee',
+  ANNULEE: 'annulee',
+  RETOURNEE: 'retournee'
+}
 
 const initialState = {
   // Client state
@@ -17,7 +32,11 @@ const initialState = {
 
   // Orders state
   readyForDelivery: [],
+  readyOrders: [],
+  canceledDeliveries: [],
   currentOrder: null,
+  preteCount: 0,
+  seenNotificationIds: JSON.parse(localStorage.getItem('seen_notifications') || '[]'), // Track IDs that the user has already "viewed" in the dropdown
 
   // Loading states
   loading: {
@@ -27,7 +46,10 @@ const initialState = {
     deleteClient: false,
     createOrder: false,
     readyForDelivery: false,
-    payment: false
+    canceledDeliveries: false,
+    payment: false,
+    action: false,
+    preteCount: false
   },
 
   // Error states
@@ -38,7 +60,9 @@ const initialState = {
     deleteClient: null,
     createOrder: null,
     readyForDelivery: null,
-    payment: null
+    canceledDeliveries: null,
+    payment: null,
+    action: null
   },
 
   // Success flags
@@ -67,6 +91,18 @@ const livreurSlice = createSlice({
     },
     resetClientCreated: (state) => {
       state.clientCreated = false
+    },
+    resetSuccess: (state) => {
+      state.clientCreated = false
+      state.orderCreated = false
+      state.paymentRecorded = false
+    },
+    markNotificationsAsSeen: (state) => {
+      // Add all current readyOrders IDs to the seen set
+      const currentIds = state.readyOrders.map(o => o.id);
+      const newSeenIds = Array.from(new Set([...state.seenNotificationIds, ...currentIds]));
+      state.seenNotificationIds = newSeenIds;
+      localStorage.setItem('seen_notifications', JSON.stringify(newSeenIds));
     },
     resetOrderCreated: (state) => {
       state.orderCreated = false
@@ -193,7 +229,7 @@ const livreurSlice = createSlice({
         state.loading.payment = false
         state.currentOrder = action.payload
         state.paymentRecorded = true
-        // Remove from ready for delivery list
+        // Remove from readyForDelivery list (livree / Sorti orders)
         state.readyForDelivery = state.readyForDelivery.filter(
           order => order.id !== action.payload.id
         )
@@ -202,6 +238,79 @@ const livreurSlice = createSlice({
         state.loading.payment = false
         state.error.payment = action.payload
         state.paymentRecorded = false
+      })
+
+    // ========== CANCEL DELIVERY ==========
+    builder
+      .addCase(cancelDelivery.pending, (state) => {
+        state.loading.action = true
+        state.error.action = null
+      })
+      .addCase(cancelDelivery.fulfilled, (state, action) => {
+        state.loading.action = false
+        // Remove from readyForDelivery list (livree / Sorti orders)
+        state.readyForDelivery = state.readyForDelivery.filter(
+          order => order.id !== action.payload.id
+        )
+        // Add to canceled deliveries if it's already fetched
+        state.canceledDeliveries.unshift(action.payload)
+      })
+      .addCase(cancelDelivery.rejected, (state, action) => {
+        state.loading.action = false
+        state.error.action = action.payload
+      })
+
+    // ========== FETCH CANCELED DELIVERIES ==========
+    builder
+      .addCase(fetchCanceledDeliveries.pending, (state) => {
+        state.loading.canceledDeliveries = true
+        state.error.canceledDeliveries = null
+      })
+      .addCase(fetchCanceledDeliveries.fulfilled, (state, action) => {
+        state.loading.canceledDeliveries = false
+        state.canceledDeliveries = action.payload
+      })
+      .addCase(fetchCanceledDeliveries.rejected, (state, action) => {
+        state.loading.canceledDeliveries = false
+        state.error.canceledDeliveries = action.payload
+      })
+
+    // ========== RETURN TO WORKPLACE ==========
+    builder
+      .addCase(returnToWorkplace.pending, (state) => {
+        state.loading.action = true
+        state.error.action = null
+      })
+      .addCase(returnToWorkplace.fulfilled, (state, action) => {
+        state.loading.action = false
+        // Remove from canceled deliveries
+        state.canceledDeliveries = state.canceledDeliveries.filter(
+          order => order.id !== action.payload.id
+        )
+      })
+      .addCase(returnToWorkplace.rejected, (state, action) => {
+        state.loading.action = false
+        state.error.action = action.payload
+      })
+
+    // ========== FETCH PRETE COUNT ==========
+    builder
+      .addCase(fetchPreteCount.fulfilled, (state, action) => {
+        state.preteCount = action.payload
+      })
+
+    // ========== FETCH READY ORDERS (prete) ==========
+    builder
+      .addCase(fetchReadyOrders.pending, (state) => {
+        state.loading.readyForDelivery = true
+      })
+      .addCase(fetchReadyOrders.fulfilled, (state, action) => {
+        state.loading.readyForDelivery = false
+        state.readyOrders = action.payload
+      })
+      .addCase(fetchReadyOrders.rejected, (state, action) => {
+        state.loading.readyForDelivery = false
+        state.error.readyForDelivery = action.payload
       })
   }
 })
@@ -212,7 +321,8 @@ export const {
   resetClientCreated,
   resetOrderCreated,
   resetPaymentRecorded,
-  setPendingClient
+  setPendingClient,
+  markNotificationsAsSeen
 } = livreurSlice.actions
 
 export default livreurSlice.reducer

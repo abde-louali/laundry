@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, UserPlus, Package, User, Wrench } from 'lucide-react';
+import { Home, ClipboardList, UserPlus, Package, User, Wrench, XCircle } from 'lucide-react';
 
 const BottomNav = ({ user }) => {
     const location = useLocation();
@@ -12,6 +12,7 @@ const BottomNav = ({ user }) => {
         { name: 'Client', path: '/livreur/register-client', icon: UserPlus },
         { name: 'Commande', path: '/livreur/create-order', icon: Package },
         { name: 'Prêtes', path: '/livreur/ready-for-delivery', icon: ClipboardList },
+        { name: 'Annulées', path: '/livreur/canceled-deliveries', icon: XCircle },
     ];
 
     const employeLinks = [

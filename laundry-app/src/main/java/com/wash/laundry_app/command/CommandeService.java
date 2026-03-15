@@ -157,6 +157,10 @@ public class CommandeService {
                 .toList();
     }
 
+    public long getCountByStatus(CommandeStatus status) {
+        return commandeRepository.countByStatus(status);
+    }
+
     // Update commande status
     @Transactional
     public CommandeDTO updateStatus(Long commandeId, UpdateCommandeStatusRequest request) {
@@ -231,6 +235,70 @@ public class CommandeService {
         return commandeMapper.toDto(commande);
     }
 
+    // Cancel delivery (Client not found)
+    @Transactional
+    public CommandeDTO cancelDelivery(Long commandeId) {
+        User currentUser = authService.currentUser();
+
+        Commande commande = commandeRepository.findById(commandeId)
+                .orElseThrow(CommandeNotFoundException::new);
+
+        if (commande.getStatus() != CommandeStatus.livree) {
+            throw new ForbiddenOperationException("Seules les commandes 'sorties' (remises au livreur) peuvent être annulées.");
+        }
+
+        String oldStatus = commande.getStatus().name();
+        commande.setStatus(CommandeStatus.annulee);
+        commande = commandeRepository.save(commande);
+
+        recordStatusChange(commande, oldStatus, CommandeStatus.annulee.name(), currentUser, "Livraison annulée: Client introuvable/indisponible");
+
+        return commandeMapper.toDto(commande);
+    }
+
+    // Take order (prete -> sorti)
+    @Transactional
+    public CommandeDTO takeOrder(Long commandeId) {
+        User currentUser = authService.currentUser();
+
+        Commande commande = commandeRepository.findById(commandeId)
+                .orElseThrow(CommandeNotFoundException::new);
+
+        if (commande.getStatus() != CommandeStatus.prete) {
+            throw new ForbiddenOperationException("Seules les commandes 'prêtes' peuvent être prises en charge.");
+        }
+
+        String oldStatus = commande.getStatus().name();
+        commande.setStatus(CommandeStatus.livree);
+        commande = commandeRepository.save(commande);
+
+        recordStatusChange(commande, oldStatus, CommandeStatus.livree.name(), currentUser, "Commande prise en charge par le livreur");
+
+        return commandeMapper.toDto(commande);
+    }
+
+    // Return to workplace
+    @Transactional
+    public CommandeDTO returnToWorkplace(Long commandeId) {
+        User currentUser = authService.currentUser();
+
+        Commande commande = commandeRepository.findById(commandeId)
+                .orElseThrow(CommandeNotFoundException::new);
+
+        if (commande.getStatus() != CommandeStatus.annulee) {
+            throw new ForbiddenOperationException("Seules les commandes annulées peuvent être retournées à l'atelier.");
+        }
+
+        String oldStatus = commande.getStatus().name();
+        // Route back to the workshop with 'retournee' status
+        commande.setStatus(CommandeStatus.retournee);
+        commande = commandeRepository.save(commande);
+
+        recordStatusChange(commande, oldStatus, CommandeStatus.retournee.name(), currentUser, "Retournée à l'atelier par le livreur");
+
+        return commandeMapper.toDto(commande);
+    }
+
     // Get historique for commande
     public List<HistoriqueStatutDTO> getHistorique(Long commandeId) {
         return historiqueStatutRepository.findByCommandeIdOrderByCreatedAtDesc(commandeId)
@@ -255,10 +323,51 @@ public class CommandeService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<CommandeDTO> getReadyForDeliveryByLivreur() {
-        return commandeRepository.findByStatus(CommandeStatus.livree)
+        var user = authService.currentUser();
+        // Fetch livree (Sorti) orders — handed over by employee to livreur
+        return commandeRepository.findByLivreurIdAndStatus(user.getId(), CommandeStatus.livree)
                 .stream()
-                .map(commandeMapper::toDto)
+                .map(this::enrichCommandeDTO)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommandeDTO> getReadyOrdersForLivreur() {
+        var user = authService.currentUser();
+        return commandeRepository.findByLivreurIdAndStatus(user.getId(), CommandeStatus.prete)
+                .stream()
+                .map(this::enrichCommandeDTO)
+                .toList();
+    }
+
+    // Get count of prete orders (for notification badge)
+    @Transactional(readOnly = true)
+    public long getPreteCountForLivreur() {
+        var user = authService.currentUser();
+        return commandeRepository.countByLivreurIdAndStatus(user.getId(), CommandeStatus.prete);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommandeDTO> getCanceledDeliveriesByLivreur() {
+        var user = authService.currentUser();
+        return commandeRepository.findByLivreurIdAndStatus(user.getId(), CommandeStatus.annulee)
+                .stream()
+                .map(this::enrichCommandeDTO)
+                .toList();
+    }
+
+    private CommandeDTO enrichCommandeDTO(Commande commande) {
+        CommandeDTO dto = commandeMapper.toDto(commande);
+
+        // Find the employee who marked the command as "prete" (ready)
+        historiqueStatutRepository.findByCommandeIdOrderByCreatedAtDesc(commande.getId())
+                .stream()
+                .filter(h -> CommandeStatus.prete.name().equalsIgnoreCase(h.getNouveauStatut()))
+                .findFirst()
+                .ifPresent(h -> dto.setPreparateurName(h.getUser().getName()));
+
+        return dto;
     }
 }

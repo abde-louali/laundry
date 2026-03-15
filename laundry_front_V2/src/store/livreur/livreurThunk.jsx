@@ -7,8 +7,13 @@ import {
   createCommande,
   getReadyForDelivery,
   recordPayment,
+  cancelDeliveryApi,
+  getCanceledDeliveries,
+  returnToWorkplaceApi,
   addClient,
-  uploadFiles
+  uploadFiles,
+  getPreteCount,
+  getReadyOrders
 } from './livreurService'
 
 // ========== CLIENT THUNKS ==========
@@ -102,6 +107,42 @@ export const submitPayment = createAsyncThunk(
   }
 )
 
+export const cancelDelivery = createAsyncThunk(
+  'livreur/cancelDelivery',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const response = await cancelDeliveryApi(orderId)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Erreur lors de l'annulation de la commande")
+    }
+  }
+)
+
+export const fetchCanceledDeliveries = createAsyncThunk(
+  'livreur/fetchCanceledDeliveries',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getCanceledDeliveries()
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Erreur lors du chargement des commandes annulées")
+    }
+  }
+)
+
+export const returnToWorkplace = createAsyncThunk(
+  'livreur/returnToWorkplace',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const response = await returnToWorkplaceApi(orderId)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Erreur lors du retour de la commande à l'atelier")
+    }
+  }
+)
+
 export const uploadImages = createAsyncThunk(
   'livreur/uploadImages',
   async (files, { rejectWithValue }) => {
@@ -110,6 +151,32 @@ export const uploadImages = createAsyncThunk(
       return response.data; // Array of { imageUrl: "..." }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Erreur lors de l'upload des images");
+    }
+  }
+);
+
+// Fetch count of prete orders (notification badge)
+export const fetchPreteCount = createAsyncThunk(
+  'livreur/fetchPreteCount',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getPreteCount();
+      return response.data.readyOrdersCount;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur');
+    }
+  }
+);
+
+// Fetch list of prete orders (for notification dropdown)
+export const fetchReadyOrders = createAsyncThunk(
+  'livreur/fetchReadyOrders',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getReadyOrders();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur');
     }
   }
 );

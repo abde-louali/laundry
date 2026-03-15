@@ -9,5 +9,6 @@ import org.mapstruct.Mapping;
 public interface CommandeTapisMapper {
 
     @Mapping(target = "tapis", source = "tapis")
+    @Mapping(target = "tapisImages", source = "tapis.images")
     CommandeTapisDTO toDto(CommandeTapis commandeTapis);
 }

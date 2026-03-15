@@ -5,7 +5,11 @@ import {
     patchCommandeStatus,
     patchTapisEtat,
     postTapisImages,
-    uploadFiles as uploadFilesService
+    uploadFiles as uploadFilesService,
+    getPendingOrders,
+    getPendingCount,
+    getReturnedOrders,
+    getReturnedCount
 } from './employeService'
 
 // ========== COMMANDE THUNKS ==========
@@ -82,4 +86,51 @@ export const uploadEmployeImages = createAsyncThunk(
     }
 )
 
+export const fetchPendingOrders = createAsyncThunk(
+    'employe/fetchPendingOrders',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await getPendingOrders()
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Erreur lors du chargement des commandes en attente')
+        }
+    }
+)
 
+export const fetchPendingCount = createAsyncThunk(
+    'employe/fetchPendingCount',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await getPendingCount()
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Erreur lors du chargement du compteur')
+        }
+    }
+)
+
+
+export const fetchReturnedOrders = createAsyncThunk(
+    'employe/fetchReturnedOrders',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await getReturnedOrders()
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Erreur lors du chargement des commandes retournées')
+        }
+    }
+)
+
+export const fetchReturnedCount = createAsyncThunk(
+    'employe/fetchReturnedCount',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await getReturnedCount()
+            return response.data
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Erreur lors du chargement du compteur des retours')
+        }
+    }
+)

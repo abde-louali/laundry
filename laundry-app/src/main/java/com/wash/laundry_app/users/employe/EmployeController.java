@@ -25,6 +25,28 @@ public class EmployeController {
             return ResponseEntity.ok(commandes);
         }
 
+        @GetMapping("/commandes/attente")
+        public ResponseEntity<List<CommandDtoEmploye>> getPendingCommandes() {
+            List<CommandDtoEmploye> commandes = employeService.getPendingCommands();
+            return ResponseEntity.ok(commandes);
+        }
+
+        @GetMapping("/commandes/count/attente")
+        public ResponseEntity<Long> getPendingCount() {
+            return ResponseEntity.ok(commandeService.getCountByStatus(CommandeStatus.en_attente));
+        }
+
+        @GetMapping("/commandes/retournee")
+        public ResponseEntity<List<CommandDtoEmploye>> getReturnedCommandes() {
+            List<CommandDtoEmploye> commandes = employeService.getReturnedCommands();
+            return ResponseEntity.ok(commandes);
+        }
+
+        @GetMapping("/commandes/count/retournee")
+        public ResponseEntity<Long> getReturnedCount() {
+            return ResponseEntity.ok(commandeService.getCountByStatus(CommandeStatus.retournee));
+        }
+
         @PatchMapping("/commandes/{id}/status")
         public ResponseEntity<CommandeDTO> updateStatus(
                 @PathVariable Long id,

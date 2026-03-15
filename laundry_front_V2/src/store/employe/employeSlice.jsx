@@ -4,7 +4,10 @@ import {
     fetchCommandeById,
     updateCommandeStatus,
     updateTapisEtat,
-    addTapisImages
+    addTapisImages,
+    fetchPendingOrders,
+    fetchPendingCount,
+    fetchReturnedCount
 } from './employeThunk'
 
 // Enum constants for use in components
@@ -15,7 +18,8 @@ export const COMMANDE_STATUS = {
     PRETE: 'prete',
     LIVREE: 'livree',
     PAYEE: 'payee',
-    ANNULEE: 'annulee'
+    ANNULEE: 'annulee',
+    RETOURNEE: 'retournee'
 }
 
 export const TAPIS_ETAT = {
@@ -41,7 +45,13 @@ const initialState = {
         selectedCommande: null,
         updateStatus: null,
         updateTapis: null
-    }
+    },
+
+    // Notifications state
+    pendingOrders: [],
+    pendingCount: 0,
+    returnedCount: 0,
+    seenNotificationIds: JSON.parse(localStorage.getItem('seen_notifications_employe') || '[]')
 }
 
 const employeSlice = createSlice({
@@ -58,6 +68,12 @@ const employeSlice = createSlice({
                 updateStatus: null,
                 updateTapis: null
             }
+        },
+        markNotificationsAsSeen: (state) => {
+            const currentIds = state.pendingOrders.map(o => o.id);
+            const newSeenIds = Array.from(new Set([...state.seenNotificationIds, ...currentIds]));
+            state.seenNotificationIds = newSeenIds;
+            localStorage.setItem('seen_notifications_employe', JSON.stringify(newSeenIds));
         }
     },
     extraReducers: (builder) => {
@@ -156,10 +172,35 @@ const employeSlice = createSlice({
                 state.loading.updateTapis = false
                 state.error.updateTapis = action.payload
             })
+
+        // ===== FETCH PENDING ORDERS =====
+        builder
+            .addCase(fetchPendingOrders.pending, (state) => {
+                state.loading.commandes = true
+            })
+            .addCase(fetchPendingOrders.fulfilled, (state, action) => {
+                state.loading.commandes = false
+                state.pendingOrders = action.payload
+            })
+            .addCase(fetchPendingOrders.rejected, (state, action) => {
+                state.loading.commandes = false
+            })
+
+        // ===== FETCH PENDING COUNT =====
+        builder
+            .addCase(fetchPendingCount.fulfilled, (state, action) => {
+                state.pendingCount = action.payload
+            })
+
+        // ===== FETCH RETURNED COUNT =====
+        builder
+            .addCase(fetchReturnedCount.fulfilled, (state, action) => {
+                state.returnedCount = action.payload
+            })
     }
 })
 
-export const { clearSelectedCommande, clearErrors } = employeSlice.actions
+export const { clearSelectedCommande, clearErrors, markNotificationsAsSeen } = employeSlice.actions
 export default employeSlice.reducer
 
 

@@ -25,6 +25,7 @@ import {
     Navigation,
     Upload,
     Plus,
+    RefreshCw,
     Image as ImageIcon
 } from 'lucide-react';
 import {
@@ -56,6 +57,7 @@ const STATUS_CONFIG = {
     [COMMANDE_STATUS.LIVREE]: { label: 'Sortie', bg: 'bg-teal-500/10', text: 'text-teal-600', dot: 'bg-teal-600', Icon: Truck },
     [COMMANDE_STATUS.PAYEE]: { label: 'Payée', bg: 'bg-emerald-500/10', text: 'text-emerald-600', dot: 'bg-emerald-600', Icon: CheckCircle2 },
     [COMMANDE_STATUS.ANNULEE]: { label: 'Annulée', bg: 'bg-red-500/10', text: 'text-red-500', dot: 'bg-red-500', Icon: ClipboardList },
+    [COMMANDE_STATUS.RETOURNEE]: { label: 'Retournée', bg: 'bg-orange-500/10', text: 'text-orange-600', dot: 'bg-orange-600', Icon: RefreshCw },
 };
 
 const ETAT_CONFIG = {
@@ -70,6 +72,7 @@ const NEXT_COMMAND_LABEL = {
     [COMMANDE_STATUS.VALIDEE]: 'Démarrer le traitement',
     [COMMANDE_STATUS.EN_TRAITEMENT]: 'Marquer comme Prête',
     [COMMANDE_STATUS.PRETE]: 'Marquer comme Sortie',
+    [COMMANDE_STATUS.RETOURNEE]: 'Remettre en Livraison',
 };
 
 const NEXT_COMMANDE_STATUS = {
@@ -77,6 +80,7 @@ const NEXT_COMMANDE_STATUS = {
     [COMMANDE_STATUS.VALIDEE]: COMMANDE_STATUS.EN_TRAITEMENT,
     [COMMANDE_STATUS.EN_TRAITEMENT]: COMMANDE_STATUS.PRETE,
     [COMMANDE_STATUS.PRETE]: COMMANDE_STATUS.LIVREE,
+    [COMMANDE_STATUS.RETOURNEE]: COMMANDE_STATUS.LIVREE,
 };
 
 // ─── Sub-Components ───────────────────────────────────────────────────────────
@@ -275,18 +279,10 @@ const TapisItemCard = ({ item, onUpdateEtat, isUpdating, onPreview }) => {
                     </p>
                 )}
 
-                <div className="grid grid-cols-3 gap-4 md:gap-8 p-6 bg-laundry-sky/10 rounded-[2rem]">
+                <div className="grid grid-cols-1 p-6 bg-laundry-sky/10 rounded-[2rem]">
                     <div className="space-y-1 min-w-0">
                         <p className="text-[9px] font-black text-laundry-deep/30 uppercase tracking-[0.2em] truncate">Quantité</p>
                         <p className="text-sm font-black text-laundry-deep uppercase truncate">{item.quantite || '1'} unités</p>
-                    </div>
-                    <div className="space-y-1 border-x border-laundry-sky/30 px-4 md:px-8 min-w-0">
-                        <p className="text-[9px] font-black text-laundry-deep/30 uppercase tracking-[0.2em] truncate">Prix Unit.</p>
-                        <p className="text-sm font-black text-laundry-deep uppercase truncate">{item.prixUnitaire} DH</p>
-                    </div>
-                    <div className="space-y-1 text-right min-w-0">
-                        <p className="text-[9px] font-black text-laundry-deep/30 uppercase tracking-[0.2em] truncate">Sous-Total</p>
-                        <p className="text-sm font-black text-laundry-primary uppercase truncate">{item.sousTotal} DH</p>
                     </div>
                 </div>
 

@@ -14,13 +14,16 @@ import ClientCommandes from './pages/admin/ClientCommandes'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import PersistLogin from './routes/PersistLogin'
 import RegisterClient from './pages/livreur/RegisterClient'
-import DeliveryDetails from './pages/livreur/DeliveryDetails'
 import Dashboard from './pages/livreur/LivreurDashboard'
 import CreateOrder from './pages/livreur/CreateOrder'
 
 import ReadyForDelivery from './pages/livreur/ReadyForDelivery'
+import CanceledDeliveries from './pages/livreur/CanceledDeliveries'
 import EmployeDashboard from './pages/employe/EmployeDashboard'
 import CommandeDetail from './pages/employe/CommandeDetail'
+import ReturnedOrders from './pages/employe/ReturnedOrders'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 function App() {
 
@@ -56,21 +59,36 @@ function App() {
 
                     {/* Delivery Flow */}
                     <Route path='/livreur/ready-for-delivery' element={<ReadyForDelivery />} />
-                    <Route path='/livreur/delivery/:orderId' element={<DeliveryDetails />} />
+                    <Route path='/livreur/canceled-deliveries' element={<CanceledDeliveries />} />
                   </Route>
 
-                  <Route element={<RequireRole allowedRoles={["employe"]} />}>
-                    {/* Employe Dashboard */}
-                    <Route path='/employe/dashboard' element={<EmployeDashboard />} />
+                    <Route element={<RequireRole allowedRoles={["employe"]} />}>
+                      {/* Employe Dashboard */}
+                      <Route path='/employe/dashboard' element={<EmployeDashboard />} />
 
-                    {/* Commande Detail */}
-                    <Route path='/employe/commandes/:id' element={<CommandeDetail />} />
-                  </Route>
+                      {/* Commande Detail */}
+                      <Route path='/employe/commandes/:id' element={<CommandeDetail />} />
+
+                      {/* Returned Orders */}
+                      <Route path='/employe/retours' element={<ReturnedOrders />} />
+                    </Route>
                 </Route>
               </Route>
             </Route>
           </Routes>
         </BrowserRouter>
+        <ToastContainer 
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </Provider>
     </>
   )

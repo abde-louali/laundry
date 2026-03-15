@@ -39,3 +39,23 @@ export const uploadFiles = async (files) => {
         }
     });
 }
+
+// Get orders en attente
+export const getPendingOrders = async () => {
+    return await api.get('/employe/commandes/attente')
+}
+
+// Get count of orders en attente
+export const getPendingCount = async () => {
+    return await api.get('/employe/commandes/count/attente')
+}
+
+// Get orders retournées
+export const getReturnedOrders = async () => {
+    return await api.get('/employe/commandes/retournee')
+}
+
+// Get count of orders retournées
+export const getReturnedCount = async () => {
+    return await api.get('/employe/commandes/count/retournee')
+}

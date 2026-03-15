@@ -4,6 +4,9 @@
 export const selectPendingClient = (state) => state.livreur.pendingClient
 export const selectSearchResult = (state) => state.livreur.searchResult
 export const selectReadyForDelivery = (state) => state.livreur.readyForDelivery
+export const selectReadyOrders = (state) => state.livreur.readyOrders
+export const selectPreteCount = (state) => state.livreur.preteCount
+export const selectSeenNotificationIds = (state) => state.livreur.seenNotificationIds
 export const selectCurrentOrder = (state) => state.livreur.currentOrder
 
 // Loading selectors

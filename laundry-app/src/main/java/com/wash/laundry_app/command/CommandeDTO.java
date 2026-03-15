@@ -32,4 +32,5 @@ public class CommandeDTO {
     private List<CommandeTapisDTO> commandeTapis;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String preparateurName;
 }

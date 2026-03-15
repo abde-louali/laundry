@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, Truck, ClipboardList, UserPlus, Package, Home, Settings, LogOut, Wrench, Users, LayoutDashboard } from 'lucide-react';
+import { Shield, Truck, ClipboardList, UserPlus, Package, Home, Settings, LogOut, Wrench, Users, LayoutDashboard, XCircle, RefreshCw } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import LogoutButton from '../../Auth/Logout';
 
@@ -19,16 +19,18 @@ const Sidebar = ({ user }) => {
         { name: 'Clients', path: '/livreur/register-client', icon: UserPlus },
         { name: 'Commandes', path: '/livreur/create-order', icon: Package },
         { name: 'Livraisons', path: '/livreur/ready-for-delivery', icon: ClipboardList },
+        { name: 'Annulées', path: '/livreur/canceled-deliveries', icon: XCircle },
     ];
 
     const employeLinks = [
         { name: 'Atelier', path: '/employe/dashboard', icon: Wrench },
+        { name: 'Retours', path: '/employe/retours', icon: RefreshCw },
     ];
 
     const links = user?.role === 'admin' ? adminLinks : user?.role === 'livreur' ? livreurLinks : user?.role === 'employe' ? employeLinks : [];
 
     return (
-        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-laundry-sky/50 h-screen sticky top-0 z-50 shadow-xl shadow-laundry-deep/5 overflow-hidden transition-all">
+        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-laundry-sky/50 h-screen sticky top-0 z-40 shadow-xl shadow-laundry-deep/5 overflow-hidden transition-all">
             {/* LOGO SECTION */}
             <div className="p-8 pb-10">
                 <div className="flex items-center gap-3 group">
