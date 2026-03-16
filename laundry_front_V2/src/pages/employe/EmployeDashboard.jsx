@@ -11,7 +11,6 @@ import {
     Loader2,
     CalendarDays,
     ClipboardList,
-    Trello,
     AlertCircle,
     Truck
 } from 'lucide-react';
@@ -19,51 +18,13 @@ import { fetchAllCommandes } from '../../store/employe/employeThunk';
 import { selectCommandes, selectLoading } from '../../store/employe/employeSelectors';
 import { COMMANDE_STATUS } from '../../store/employe/employeSlice';
 
-// ─── Status Configs ───────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-    [COMMANDE_STATUS.EN_ATTENTE]: {
-        label: 'En Attente',
-        color: 'text-amber-600',
-        bg: 'bg-amber-100/50',
-        border: 'border-amber-200',
-        dot: 'bg-amber-400',
-        icon: Clock
-    },
-    [COMMANDE_STATUS.VALIDEE]: {
-        label: 'Validée',
-        color: 'text-blue-600',
-        bg: 'bg-blue-100/50',
-        border: 'border-blue-200',
-        dot: 'bg-blue-400',
-        icon: CheckCircle2
-    },
-    [COMMANDE_STATUS.EN_TRAITEMENT]: {
-        label: 'En Traitement',
-        color: 'text-purple-600',
-        bg: 'bg-purple-100/50',
-        border: 'border-purple-200',
-        dot: 'bg-purple-400',
-        icon: Wrench
-    },
-    [COMMANDE_STATUS.PRETE]: {
-        label: 'Prête',
-        color: 'text-green-600',
-        bg: 'bg-green-100/50',
-        border: 'border-green-200',
-        dot: 'bg-green-400',
-        icon: PackageCheck
-    },
-    [COMMANDE_STATUS.LIVREE]: {
-        label: 'Sortie',
-        color: 'text-teal-600',
-        bg: 'bg-teal-100/50',
-        border: 'border-teal-200',
-        dot: 'bg-teal-400',
-        icon: Truck
-    }
+    [COMMANDE_STATUS.EN_ATTENTE]: { label: 'En Attente', color: 'text-laundry-warning', bg: 'bg-laundry-warning-light', border: 'border-laundry-warning/20', dot: 'bg-laundry-warning', icon: Clock },
+    [COMMANDE_STATUS.VALIDEE]: { label: 'Validée', color: 'text-laundry-primary-light', bg: 'bg-blue-50', border: 'border-laundry-primary-light/20', dot: 'bg-laundry-primary-light', icon: CheckCircle2 },
+    [COMMANDE_STATUS.EN_TRAITEMENT]: { label: 'En Traitement', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', dot: 'bg-purple-500', icon: Wrench },
+    [COMMANDE_STATUS.PRETE]: { label: 'Prête', color: 'text-laundry-success', bg: 'bg-laundry-success-light', border: 'border-laundry-success/20', dot: 'bg-laundry-success', icon: PackageCheck },
+    [COMMANDE_STATUS.LIVREE]: { label: 'Sortie', color: 'text-laundry-accent', bg: 'bg-cyan-50', border: 'border-laundry-accent/20', dot: 'bg-laundry-accent', icon: Truck }
 };
-
-// ─── Sub-Components ───────────────────────────────────────────────────────────
 
 const DashboardStatsCard = ({ title, count, status, onClick, active }) => {
     const config = STATUS_CONFIG[status];
@@ -72,105 +33,100 @@ const DashboardStatsCard = ({ title, count, status, onClick, active }) => {
     return (
         <button
             onClick={onClick}
-            className={`flex-1 min-w-[240px] p-6 rounded-[2.5rem] border-2 transition-all duration-300 hover:scale-[1.05] hover:shadow-2xl active:scale-95 group text-left ${config.bg} ${config.border} ${active
-                    ? `shadow-xl ring-4 ring-offset-2 ${config.color.replace('text-', 'ring-')} z-10 scale-[1.05]`
-                    : 'hover:border-current/30 shadow-sm'
-                }`}
+            className={`flex-1 min-w-[200px] p-5 rounded-xl border transition-all text-left bg-white
+                ${active 
+                    ? `border-laundry-primary shadow-card outline-none ring-1 ring-laundry-primary scale-[1.02]` 
+                    : `border-laundry-border shadow-sm hover:border-laundry-primary/50 hover:shadow-card`
+                }
+            `}
         >
             <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-2xl bg-white/80 shadow-sm transition-all ${config.color} ${active ? 'scale-110 shadow-md' : ''}`}>
-                    <Icon size={20} strokeWidth={3} />
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config.bg} ${config.color}`}>
+                    <Icon size={20} />
                 </div>
                 {active && (
-                    <div className="flex items-center gap-1 animate-fade-in bg-white/50 px-2 py-0.5 rounded-full border border-white/20">
-                        <span className={`text-[9px] font-black uppercase tracking-widest ${config.color}`}>Actif</span>
-                        <div className={`w-1.5 h-1.5 rounded-full ${config.dot} animate-pulse`}></div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-laundry-background border border-laundry-border text-laundry-primary">
+                        <span>Actif</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-laundry-primary animate-pulse"></div>
                     </div>
                 )}
             </div>
-            <div className="relative">
-                <h3 className={`text-4xl font-black mb-1 tracking-tighter transition-colors text-laundry-deep`}>
-                    {count}
-                </h3>
-                <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${config.color}`}>
-                    {title}
-                </p>
+            <div>
+                <h3 className="text-3xl font-bold text-laundry-text-primary mb-1">{count}</h3>
+                <p className="text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">{title}</p>
             </div>
         </button>
     );
 };
 
 const StatusBadge = ({ status }) => {
-    const config = STATUS_CONFIG[status] || { label: status, color: 'text-slate-500', bg: 'bg-slate-50', dot: 'bg-slate-400' };
+    const config = STATUS_CONFIG[status] || { label: status, color: 'text-laundry-text-secondary', bg: 'bg-laundry-background', dot: 'bg-laundry-border' };
     return (
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl ${config.bg} ${config.color} border border-current/10`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${config.dot} animate-pulse`}></span>
-            <span className="text-[9px] font-black uppercase tracking-widest leading-none">{config.label}</span>
-        </div>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider border border-transparent ${config.bg} ${config.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`}></span>
+            {config.label}
+        </span>
     );
 };
 
 const OrdersTable = ({ orders, onViewDetail }) => {
     if (orders.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border-2 border-dashed border-laundry-sky/50">
-                <div className="p-5 bg-laundry-sky/10 rounded-full mb-4 text-laundry-primary">
-                    <ClipboardList size={32} />
-                </div>
-                <h3 className="text-lg font-black text-laundry-deep uppercase tracking-tight">Aucune commande</h3>
-                <p className="text-xs font-bold text-laundry-deep/30">Votre file d'attente est vide pour le moment.</p>
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-laundry-border shadow-sm text-center">
+                <ClipboardList size={40} className="text-laundry-text-muted opacity-50 mb-4" />
+                <h3 className="text-sm font-bold text-laundry-text-secondary">Aucune commande</h3>
+                <p className="text-xs font-medium text-laundry-text-muted mt-1">Votre file d'attente est vide.</p>
             </div>
         );
     }
 
     return (
-        <div className="bg-white rounded-[2.5rem] border-2 border-laundry-sky/50 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-xl shadow-card border border-laundry-border overflow-hidden">
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-laundry-sky/10">
-                            <th className="px-8 py-5 text-left text-[10px] font-black text-laundry-deep/40 uppercase tracking-[0.2em]">Commande</th>
-                            <th className="px-8 py-5 text-left text-[10px] font-black text-laundry-deep/40 uppercase tracking-[0.2em]">Articles</th>
-                            <th className="px-8 py-5 text-left text-[10px] font-black text-laundry-deep/40 uppercase tracking-[0.2em]">Status</th>
-                            <th className="px-8 py-5 text-left text-[10px] font-black text-laundry-deep/40 uppercase tracking-[0.2em]">Date</th>
-                            <th className="px-8 py-5 text-right text-[10px] font-black text-laundry-deep/40 uppercase tracking-[0.2em]">Actions</th>
+                        <tr className="bg-laundry-background border-b border-laundry-border">
+                            <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Commande</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Articles</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Statut</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-laundry-sky/20">
+                    <tbody className="divide-y divide-laundry-border">
                         {orders.map((order) => (
-                            <tr key={order.id} className="hover:bg-laundry-sky/5 transition-colors group">
-                                <td className="px-8 py-6">
+                            <tr key={order.id} className="hover:bg-laundry-background/50 transition-colors group">
+                                <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-laundry-sky flex items-center justify-center text-laundry-primary">
-                                            <Trello size={18} />
+                                        <div className="w-10 h-10 rounded-full bg-laundry-primary/10 flex items-center justify-center text-laundry-primary flex-shrink-0">
+                                            <PackageCheck size={18} />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-black text-laundry-deep uppercase tracking-tight">#{order.numeroCommande}</p>
-                                            <p className="text-[10px] font-bold text-laundry-deep/30">ID: {order.id}</p>
+                                            <p className="text-sm font-bold text-laundry-text-primary uppercase">#{order.numeroCommande}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-8 py-6 text-xs font-black text-laundry-deep">
+                                <td className="px-6 py-4 font-semibold text-sm text-laundry-text-primary">
                                     {order.commandeTapis?.length || 0} Tapis
                                 </td>
-                                <td className="px-8 py-6">
+                                <td className="px-6 py-4">
                                     <StatusBadge status={order.status} />
                                 </td>
-                                <td className="px-8 py-6">
-                                    <div className="flex items-center gap-2 text-laundry-deep/50">
-                                        <CalendarDays size={14} />
-                                        <span className="text-[11px] font-bold">
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2 text-laundry-text-secondary">
+                                        <CalendarDays size={14} className="text-laundry-text-muted" />
+                                        <span className="text-xs font-semibold">
                                             {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
                                         </span>
                                     </div>
                                 </td>
-                                <td className="px-8 py-6 text-right">
+                                <td className="px-6 py-4 text-right">
                                     <button
                                         onClick={() => onViewDetail(order.id)}
-                                        className="inline-flex items-center gap-2 px-6 py-3 bg-laundry-deep text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-laundry-deep/20 hover:bg-laundry-primary transition-all active:scale-95 group"
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-laundry-border text-laundry-text-primary rounded-md text-xs font-semibold hover:bg-laundry-background hover:text-laundry-primary transition-all shadow-sm"
                                     >
                                         Gérer
-                                        <ChevronRight size={12} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+                                        <ChevronRight size={14} />
                                     </button>
                                 </td>
                             </tr>
@@ -184,38 +140,34 @@ const OrdersTable = ({ orders, onViewDetail }) => {
 
 const RecentActivityList = ({ activities, onViewDetail }) => {
     return (
-        <div className="bg-laundry-deep rounded-[2.5rem] p-8 text-white shadow-2xl">
-            <h3 className="text-lg font-black uppercase tracking-tighter mb-6 flex items-center gap-3">
-                <AlertCircle size={20} className="text-laundry-sky" />
+        <div className="bg-white rounded-xl shadow-card border border-laundry-border p-6">
+            <h3 className="font-bold text-laundry-text-primary mb-6 flex items-center gap-2">
+                <AlertCircle size={18} className="text-laundry-text-muted" />
                 Dernières Activités
             </h3>
-            <div className="space-y-6">
+            <div className="space-y-0 relative">
+                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-laundry-border"></div>
                 {activities.length === 0 ? (
-                    <p className="text-xs font-bold text-white/30 italic">Aucune activité récente.</p>
+                    <p className="text-xs font-medium text-laundry-text-muted italic py-2 pl-6">Aucune activité récente.</p>
                 ) : (
                     activities.map((activity, idx) => (
                         <div
                             key={idx}
-                            className="flex gap-4 group cursor-pointer"
+                            className="flex gap-4 py-3 relative z-10 hover:bg-laundry-background/50 rounded-lg -mx-2 px-2 cursor-pointer transition-colors"
                             onClick={() => onViewDetail(activity.id)}
                         >
-                            <div className="relative flex flex-col items-center">
-                                <div className={`w-2 h-2 rounded-full ring-4 transition-all group-hover:scale-150 ${STATUS_CONFIG[activity.status]?.dot || 'bg-laundry-sky'
-                                    } ${STATUS_CONFIG[activity.status]?.dot ? 'ring-current/20' : 'ring-laundry-sky/20'
-                                    }`}></div>
-                                {idx !== activities.length - 1 && <div className="w-px flex-1 bg-white/10 my-2"></div>}
-                            </div>
-                            <div className="flex-1 pb-4 border-b border-white/5 group-last:border-0 group-last:pb-0">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                    <p className="text-[11px] font-black uppercase tracking-tight group-hover:text-laundry-sky transition-colors">
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 mt-1 shadow-sm flex-shrink-0 bg-white ${STATUS_CONFIG[activity.status]?.border?.replace('border-', 'border-') || 'border-laundry-border'} ${STATUS_CONFIG[activity.status]?.dot?.replace('bg-', 'border-') || 'border-laundry-primary'}`}></div>
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                    <p className="text-sm font-semibold text-laundry-text-primary transition-colors">
                                         #{activity.numeroCommande}
                                     </p>
-                                    <span className="text-[9px] font-bold text-white/30">
+                                    <span className="text-xs font-medium text-laundry-text-muted">
                                         {new Date(activity.updatedAt || activity.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
-                                <p className="text-[10px] font-bold text-white/60">
-                                    Passé en <span className={STATUS_CONFIG[activity.status]?.color || 'text-laundry-sky'}>
+                                <p className="text-xs text-laundry-text-secondary">
+                                    Passé en <span className={`font-semibold ${STATUS_CONFIG[activity.status]?.color || 'text-laundry-text-primary'}`}>
                                         {(STATUS_CONFIG[activity.status]?.label || activity.status).toUpperCase()}
                                     </span>
                                 </p>
@@ -227,8 +179,6 @@ const RecentActivityList = ({ activities, onViewDetail }) => {
         </div>
     );
 };
-
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function EmployeDashboard() {
     const dispatch = useDispatch();
@@ -279,91 +229,65 @@ export default function EmployeDashboard() {
 
     if (loading.commandes && commandes.length === 0) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50 min-h-screen">
-                <Loader2 size={48} className="text-laundry-primary animate-spin mb-4" />
-                <p className="text-sm font-black text-laundry-deep/30 uppercase tracking-[0.2em]">Chargement de l'atelier...</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-laundry-background min-h-[60vh] rounded-xl">
+                <Loader2 size={32} className="text-laundry-primary animate-spin mb-4" />
+                <p className="text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Chargement de l'atelier...</p>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col gap-10 p-2 animate-fade-in max-w-[1600px] mx-auto pb-20">
-            {/* Header Area */}
-            <div className="flex items-end justify-between gap-6 pb-2 border-b-2 border-laundry-sky/20">
+        <div className="space-y-6 p-4 sm:p-6 lg:p-8 animate-fade-in max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
                 <div>
-                    <h1 className="text-5xl font-black text-laundry-deep uppercase tracking-tighter leading-none mb-3">
-                        Tableau de <span className="text-laundry-primary">Bord</span>
+                    <h1 className="text-2xl font-bold text-laundry-primary">
+                        Atelier de Traitement
                     </h1>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-4 py-1.5 bg-laundry-sky/20 rounded-full border border-laundry-sky/30">
-                            <div className="w-2 h-2 rounded-full bg-laundry-primary animate-pulse"></div>
-                            <span className="text-[10px] font-black text-laundry-deep/50 uppercase tracking-widest">Atelier Actif</span>
+                    <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-laundry-success-light rounded border border-laundry-success/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-laundry-success animate-pulse"></div>
+                            <span className="text-[10px] font-bold text-laundry-success uppercase tracking-widest">Actif</span>
                         </div>
-                        <span className="text-laundry-sky/50 font-bold text-xs">—</span>
-                        <p className="text-[10px] font-black text-laundry-deep/30 uppercase tracking-[0.2em]">
-                            {filteredCommandes.length} Commandes {filterStatus ? `filtrées par ${STATUS_CONFIG[filterStatus]?.label}` : 'au total'}
-                        </p>
+                        <span className="text-sm font-medium text-laundry-text-muted">
+                            {filteredCommandes.length} Commandes {filterStatus ? `(${STATUS_CONFIG[filterStatus]?.label})` : 'au total'}
+                        </span>
                     </div>
                 </div>
 
                 <button
                     onClick={handleRefresh}
                     disabled={loading.commandes}
-                    className="p-5 bg-white border-2 border-laundry-sky rounded-3xl text-laundry-primary hover:bg-laundry-sky hover:shadow-xl transition-all active:scale-95 disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 p-2 bg-white border border-laundry-border rounded-md text-laundry-text-secondary hover:bg-laundry-background hover:text-laundry-primary transition-colors active:scale-95 disabled:opacity-50 shadow-sm"
+                    title="Actualiser"
                 >
-                    <RefreshCw size={24} className={loading.commandes ? 'animate-spin' : ''} strokeWidth={3} />
+                    <RefreshCw size={20} className={loading.commandes ? 'animate-spin' : ''} />
                 </button>
             </div>
 
-            {/* Stats Overview Sections */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <DashboardStatsCard
-                    title="En Attente"
-                    count={stats.enAttente}
-                    status={COMMANDE_STATUS.EN_ATTENTE}
-                    onClick={() => toggleFilter(COMMANDE_STATUS.EN_ATTENTE)}
-                    active={filterStatus === COMMANDE_STATUS.EN_ATTENTE}
-                />
-                <DashboardStatsCard
-                    title="En Traitement"
-                    count={stats.enTraitement}
-                    status={COMMANDE_STATUS.EN_TRAITEMENT}
-                    onClick={() => toggleFilter(COMMANDE_STATUS.EN_TRAITEMENT)}
-                    active={filterStatus === COMMANDE_STATUS.EN_TRAITEMENT}
-                />
-                <DashboardStatsCard
-                    title="Prêtes"
-                    count={stats.prete}
-                    status={COMMANDE_STATUS.PRETE}
-                    onClick={() => toggleFilter(COMMANDE_STATUS.PRETE)}
-                    active={filterStatus === COMMANDE_STATUS.PRETE}
-                />
-                <DashboardStatsCard
-                    title="Sorties"
-                    count={stats.livree}
-                    status={COMMANDE_STATUS.LIVREE}
-                    onClick={() => toggleFilter(COMMANDE_STATUS.LIVREE)}
-                    active={filterStatus === COMMANDE_STATUS.LIVREE}
-                />
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <DashboardStatsCard title="En Attente" count={stats.enAttente} status={COMMANDE_STATUS.EN_ATTENTE} onClick={() => toggleFilter(COMMANDE_STATUS.EN_ATTENTE)} active={filterStatus === COMMANDE_STATUS.EN_ATTENTE} />
+                <DashboardStatsCard title="En Traitement" count={stats.enTraitement} status={COMMANDE_STATUS.EN_TRAITEMENT} onClick={() => toggleFilter(COMMANDE_STATUS.EN_TRAITEMENT)} active={filterStatus === COMMANDE_STATUS.EN_TRAITEMENT} />
+                <DashboardStatsCard title="Prêtes" count={stats.prete} status={COMMANDE_STATUS.PRETE} onClick={() => toggleFilter(COMMANDE_STATUS.PRETE)} active={filterStatus === COMMANDE_STATUS.PRETE} />
+                <DashboardStatsCard title="Sorties" count={stats.livree} status={COMMANDE_STATUS.LIVREE} onClick={() => toggleFilter(COMMANDE_STATUS.LIVREE)} active={filterStatus === COMMANDE_STATUS.LIVREE} />
             </div>
 
-            {/* Main Content: Orders Table & Activity List */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-2xl font-black text-laundry-deep uppercase tracking-tighter">
-                                {filterStatus ? `File : ${STATUS_CONFIG[filterStatus]?.label}` : 'Toutes les Commandes'}
-                            </h2>
-                            {filterStatus && (
-                                <button
-                                    onClick={() => setFilterStatus(null)}
-                                    className="px-3 py-1 bg-laundry-sky/50 text-laundry-primary text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-laundry-primary hover:text-white transition-all"
-                                >
-                                    Effacer X
-                                </button>
-                            )}
-                        </div>
+            {/* Content Split */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                <div className="lg:col-span-2 space-y-4">
+                    <div className="flex items-center justify-between pt-2">
+                        <h2 className="text-lg font-bold text-laundry-text-primary">
+                            File d'attente
+                        </h2>
+                        {filterStatus && (
+                            <button
+                                onClick={() => setFilterStatus(null)}
+                                className="text-xs font-semibold text-laundry-text-secondary hover:text-laundry-primary flex items-center gap-1 transition-colors"
+                            >
+                                Effacer le filtre ×
+                            </button>
+                        )}
                     </div>
                     <OrdersTable
                         orders={filteredCommandes}
@@ -377,16 +301,13 @@ export default function EmployeDashboard() {
                         onViewDetail={(id) => navigate(`/employe/commandes/${id}`)}
                     />
 
-                    {/* Visual Aid/Summary Card */}
-                    <div className="p-8 bg-laundry-sky/10 rounded-[2.5rem] border-2 border-laundry-sky/30">
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="p-3 bg-white rounded-2xl text-laundry-primary border border-laundry-sky">
-                                <PackageCheck size={24} />
-                            </div>
-                            <h3 className="text-lg font-black text-laundry-deep uppercase tracking-tighter">Performance</h3>
+                    <div className="p-5 bg-laundry-background border border-laundry-border rounded-xl">
+                        <div className="flex items-center gap-3 mb-3">
+                            <PackageCheck size={18} className="text-laundry-primary" />
+                            <h3 className="font-bold text-laundry-text-primary text-sm">Performance</h3>
                         </div>
-                        <p className="text-xs font-bold text-laundry-deep/50 leading-relaxed">
-                            Maintenez un flux de travail régulier pour assurer la satisfaction des clients. N'oubliez pas d'ajouter les photos après nettoyage.
+                        <p className="text-xs text-laundry-text-secondary leading-relaxed">
+                            Maintenez un flux de travail régulier. N'oubliez pas d'ajouter les photos après nettoyage pour garantir la qualité.
                         </p>
                     </div>
                 </div>

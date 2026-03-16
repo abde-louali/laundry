@@ -4,34 +4,36 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Loader2, Package, Hash, User, CalendarDays,
     ClipboardList, MapPin, Phone, CreditCard, CheckCircle2,
-    Clock, Wrench, Truck, XCircle, DollarSign, ChevronRight
+    Clock, Wrench, Truck, XCircle, DollarSign
 } from 'lucide-react';
 import { fetchCommandeById } from '../../store/admin/adminThunk';
 import { clearSelectedCommande } from '../../store/admin/adminSlice';
 
 const STATUS_CONFIG = {
-    en_attente: { label: 'En Attente', bg: 'bg-amber-50', text: 'text-amber-600', Icon: Clock },
-    validee: { label: 'Validée', bg: 'bg-blue-50', text: 'text-blue-600', Icon: CheckCircle2 },
+    en_attente: { label: 'En Attente', bg: 'bg-laundry-warning-light', text: 'text-laundry-warning', Icon: Clock },
+    validee: { label: 'Validée', bg: 'bg-blue-50', text: 'text-laundry-primary-light', Icon: CheckCircle2 },
     en_traitement: { label: 'En Traitement', bg: 'bg-purple-50', text: 'text-purple-600', Icon: Wrench },
-    prete: { label: 'Prête', bg: 'bg-green-50', text: 'text-green-600', Icon: CheckCircle2 },
-    livree: { label: 'Livrée', bg: 'bg-teal-50', text: 'text-teal-600', Icon: Truck },
-    payee: { label: 'Payée', bg: 'bg-emerald-50', text: 'text-emerald-600', Icon: CreditCard },
-    annulee: { label: 'Annulée', bg: 'bg-red-50', text: 'text-red-500', Icon: XCircle },
+    prete: { label: 'Prête', bg: 'bg-laundry-success-light', text: 'text-laundry-success', Icon: CheckCircle2 },
+    livree: { label: 'Livrée', bg: 'bg-cyan-50', text: 'text-laundry-accent', Icon: Truck },
+    payee: { label: 'Payée', bg: 'bg-emerald-50', text: 'text-emerald-700', Icon: CreditCard },
+    annulee: { label: 'Annulée', bg: 'bg-laundry-error-light', text: 'text-laundry-error', Icon: XCircle },
 };
 
 const ETAT_CONFIG = {
-    en_attente: { label: 'En Attente', color: 'text-amber-500', bg: 'bg-amber-50', Icon: Clock },
-    en_nettoyage: { label: 'En Nettoyage', color: 'text-blue-500', bg: 'bg-blue-50', Icon: Wrench },
-    nettoye: { label: 'Nettoyé', color: 'text-green-500', bg: 'bg-green-50', Icon: CheckCircle2 },
-    livre: { label: 'Livré', color: 'text-emerald-500', bg: 'bg-emerald-50', Icon: Truck },
+    en_attente: { label: 'En Attente', color: 'text-laundry-warning', bg: 'bg-laundry-warning-light', Icon: Clock },
+    en_nettoyage: { label: 'En Nettoyage', color: 'text-laundry-primary-light', bg: 'bg-blue-50', Icon: Wrench },
+    nettoye: { label: 'Nettoyé', color: 'text-laundry-success', bg: 'bg-laundry-success-light', Icon: CheckCircle2 },
+    livre: { label: 'Livré', color: 'text-emerald-700', bg: 'bg-emerald-50', Icon: Truck },
 };
 
 const InfoChip = ({ icon: Icon, label, value }) => (
-    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-        <Icon size={16} className="text-laundry-fresh flex-shrink-0" />
+    <div className="flex items-center gap-3 p-4 bg-laundry-background rounded-lg border border-laundry-border transition-colors hover:bg-white hover:border-laundry-text-muted/30">
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-laundry-border flex-shrink-0">
+            <Icon size={16} className="text-laundry-text-muted" />
+        </div>
         <div>
-            <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{label}</p>
-            <p className="text-xs font-black text-white">{value || '—'}</p>
+            <p className="text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">{label}</p>
+            <p className="text-sm font-bold text-laundry-text-primary mt-0.5">{value || '—'}</p>
         </div>
     </div>
 );
@@ -51,9 +53,9 @@ export default function AdminCommandeDetail() {
 
     if (loading || !commande) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[60vh] text-laundry-primary">
-                <Loader2 size={48} className="animate-spin" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-laundry-deep/30">Chargement...</p>
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 min-h-[60vh] bg-laundry-background rounded-xl">
+                <Loader2 size={32} className="animate-spin text-laundry-primary" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-laundry-text-secondary">Chargement...</p>
             </div>
         );
     }
@@ -64,121 +66,128 @@ export default function AdminCommandeDetail() {
     const totalPrice = tapis.reduce((sum, t) => sum + (parseFloat(t.sousTotal) || 0), 0);
 
     return (
-        <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-16">
+        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in p-4 sm:p-6 lg:p-8">
 
-            {/* BACK */}
-            <button
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-laundry-primary font-black uppercase tracking-widest text-[10px] hover:gap-3 transition-all group"
-            >
-                <ArrowLeft size={16} strokeWidth={3} className="group-hover:-translate-x-1 transition-transform" />
-                <span>Retour</span>
-            </button>
+            {/* BACK & HEADER */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center gap-2 text-laundry-text-secondary font-medium text-sm hover:text-laundry-primary transition-all group"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <span>Retour</span>
+                </button>
 
-            {/* HEADER CARD */}
-            <div className="bg-laundry-deep rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-60 h-60 bg-laundry-primary/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse"></div>
-                <div className="relative z-10 space-y-6">
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider border border-transparent ${statusCfg.bg} ${statusCfg.text}`}>
+                    <StatusIcon size={14} />
+                    {statusCfg.label}
+                </div>
+            </div>
 
-                    {/* Number + Status */}
+            {/* MAIN CARD */}
+            <div className="bg-white rounded-xl shadow-card border border-laundry-border overflow-hidden">
+                <div className="p-6 md:p-8 border-b border-laundry-border relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-laundry-primary"></div>
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                         <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Hash size={14} className="text-laundry-fresh" />
-                                <span className="text-[10px] font-black text-laundry-fresh uppercase tracking-[0.2em]">{commande.numeroCommande}</span>
+                            <div className="flex items-center gap-2 mb-1">
+                                <Hash size={16} className="text-laundry-text-muted" />
+                                <span className="text-xs font-bold text-laundry-text-secondary uppercase tracking-widest">Commande #{commande.id}</span>
                             </div>
-                            <h2 className="text-3xl font-black uppercase tracking-tighter">Commande #{commande.id}</h2>
+                            <h2 className="text-2xl font-bold text-laundry-text-primary tracking-tight">{commande.numeroCommande}</h2>
                         </div>
-                        <span className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${statusCfg.bg} ${statusCfg.text}`}>
-                            <StatusIcon size={14} strokeWidth={3} />
-                            {statusCfg.label}
-                        </span>
-                    </div>
-
-                    {/* Info grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <InfoChip icon={User} label="Livreur" value={commande.livreur?.name} />
-                        <InfoChip icon={User} label="Client" value={commande.client?.name} />
-                        <InfoChip icon={Phone} label="Téléphone" value={commande.client?.phone} />
-                        <InfoChip icon={CalendarDays} label="Créée le" value={formatDate(commande.dateCreation)} />
-                        {commande.dateLivraison && (
-                            <InfoChip icon={Truck} label="Livrée le" value={formatDate(commande.dateLivraison)} />
-                        )}
-                        {commande.modePaiement && (
-                            <InfoChip icon={CreditCard} label="Paiement" value={commande.modePaiement} />
-                        )}
-                    </div>
-
-                    {/* Total */}
-                    {commande.montantTotal != null && (
-                        <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/10">
-                            <div className="flex items-center gap-3">
-                                <DollarSign size={20} className="text-laundry-fresh" />
-                                <span className="font-black uppercase tracking-widest text-xs text-white/60">Montant Total</span>
+                        {commande.montantTotal != null && (
+                            <div className="flex flex-col items-end">
+                                <span className="text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider mb-1">Montant Total</span>
+                                <span className="text-2xl font-bold text-laundry-primary">{commande.montantTotal} <span className="text-sm text-laundry-text-muted">DH</span></span>
                             </div>
-                            <span className="text-3xl font-black text-laundry-fresh">{commande.montantTotal} <span className="text-sm">DH</span></span>
+                        )}
+                    </div>
+                </div>
+
+                <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <InfoChip icon={User} label="Client" value={commande.client?.name} />
+                    <InfoChip icon={Phone} label="Téléphone" value={commande.client?.phone} />
+                    {commande.client?.address && (
+                        <div className="sm:col-span-2 lg:col-span-1 border border-laundry-border rounded-lg bg-laundry-background p-4 flex gap-3">
+                            <MapPin size={16} className="text-laundry-text-muted flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Adresse</p>
+                                <p className="text-sm font-bold text-laundry-text-primary mt-1">{commande.client.address}</p>
+                            </div>
                         </div>
                     )}
-
-                    {/* Client address */}
-                    {commande.client?.address && (
-                        <div className="flex items-start gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                            <MapPin size={16} className="text-laundry-fresh flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">Adresse</p>
-                                <p className="text-xs font-bold text-white/80">{commande.client.address}</p>
-                            </div>
-                        </div>
+                    <InfoChip icon={User} label="Livreur Assigné" value={commande.livreur?.name} />
+                    <InfoChip icon={CalendarDays} label="Créée le" value={formatDate(commande.dateCreation)} />
+                    {commande.dateLivraison && (
+                        <InfoChip icon={Truck} label="Livrée le" value={formatDate(commande.dateLivraison)} />
+                    )}
+                    {commande.modePaiement && (
+                        <InfoChip icon={CreditCard} label="Paiement" value={commande.modePaiement} />
                     )}
                 </div>
             </div>
 
-            {/* TAPIS LIST */}
+            {/* INVENTORY */}
             {tapis.length > 0 && (
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 px-2">
-                        <Package size={20} className="text-laundry-primary" />
-                        <h3 className="font-black text-laundry-deep uppercase tracking-widest text-sm">
-                            Inventaire — {tapis.length} tapis
+                <div className="bg-white rounded-xl shadow-card border border-laundry-border p-6 md:p-8">
+                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-laundry-border">
+                        <Package size={20} className="text-laundry-text-muted" />
+                        <h3 className="font-bold text-laundry-text-primary text-lg tracking-tight">
+                            Inventaire
                         </h3>
+                        <span className="text-xs font-semibold text-laundry-text-secondary bg-laundry-background px-2 py-0.5 rounded-full border border-laundry-border">
+                            {tapis.length} articles
+                        </span>
                     </div>
 
-                    <div className="space-y-3">
-                        {tapis.map((t, i) => {
-                            const etatCfg = ETAT_CONFIG[t.etat] || ETAT_CONFIG.en_attente;
-                            const EtatIcon = etatCfg.Icon;
-                            const tapisInfo = t.tapis || {};
-                            return (
-                                <div key={t.id} className="bg-white rounded-3xl border-2 border-laundry-sky/50 p-5 flex items-center gap-5 shadow-sm">
-                                    <div className={`w-12 h-12 rounded-[1.2rem] flex items-center justify-center font-black text-lg ${etatCfg.bg} ${etatCfg.color} flex-shrink-0`}>
-                                        {i + 1}
-                                    </div>
-                                    <div className="flex-1 min-w-0 space-y-1.5">
-                                        <h4 className="font-black text-laundry-deep uppercase tracking-tight text-sm truncate">
-                                            {tapisInfo.nom || tapisInfo.name || `Tapis ${i + 1}`}
-                                        </h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {t.quantite && <span className="text-[9px] font-black text-laundry-deep/50 bg-laundry-sky/50 px-2 py-1 rounded-full">x{t.quantite}</span>}
-                                            {t.prixUnitaire && <span className="text-[9px] font-black text-laundry-primary bg-laundry-sky px-2 py-1 rounded-full">{t.prixUnitaire} DH/u</span>}
-                                            {t.sousTotal && <span className="text-[9px] font-black text-white bg-laundry-primary px-3 py-1 rounded-full">= {t.sousTotal} DH</span>}
-                                        </div>
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${etatCfg.bg} ${etatCfg.color}`}>
-                                            <EtatIcon size={10} strokeWidth={3} /> {etatCfg.label}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-laundry-background/50 border-b border-laundry-border">
+                                    <th className="px-4 py-3 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Id</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Article</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-center">Qté</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-right">Prix</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-center">État</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-laundry-border">
+                                {tapis.map((t, i) => {
+                                    const etatCfg = ETAT_CONFIG[t.etat] || ETAT_CONFIG.en_attente;
+                                    const EtatIcon = etatCfg.Icon;
+                                    const tapisInfo = t.tapis || {};
+                                    return (
+                                        <tr key={t.id} className="hover:bg-laundry-background/30 transition-colors">
+                                            <td className="px-4 py-4 text-xs font-bold text-laundry-text-muted">#{i + 1}</td>
+                                            <td className="px-4 py-4 font-semibold text-sm text-laundry-text-primary truncate max-w-[200px]">
+                                                {tapisInfo.nom || tapisInfo.name || `Tapis ${i + 1}`}
+                                            </td>
+                                            <td className="px-4 py-4 text-center text-sm font-medium">{t.quantite || 1}</td>
+                                            <td className="px-4 py-4 text-right text-sm text-laundry-text-secondary">{t.prixUnitaire ? `${t.prixUnitaire} DH` : '—'}</td>
+                                            <td className="px-4 py-4 text-center">
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider border border-transparent ${etatCfg.bg} ${etatCfg.color}`}>
+                                                    <EtatIcon size={12} /> {etatCfg.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 text-right font-bold text-laundry-text-primary">
+                                                {t.sousTotal ? `${t.sousTotal} DH` : '—'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
 
-                    {/* Total */}
                     {totalPrice > 0 && (
-                        <div className="flex items-center justify-between p-5 bg-laundry-deep text-white rounded-3xl shadow-xl">
+                        <div className="flex items-center justify-between p-5 bg-laundry-background border border-laundry-border rounded-lg mt-6">
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-white/40">Total Calculé</p>
-                                <p className="text-[10px] font-bold text-white/60 mt-0.5">{tapis.length} tapis · {tapis.reduce((s, t) => s + (t.quantite || 0), 0)} unités</p>
+                                <p className="text-xs font-bold uppercase tracking-wider text-laundry-text-secondary">Sous-total Calculé</p>
+                                <p className="text-sm font-medium text-laundry-text-muted mt-0.5">{tapis.reduce((s, t) => s + (t.quantite || 0), 0)} unités</p>
                             </div>
-                            <p className="text-3xl font-black text-laundry-fresh">{totalPrice.toFixed(2)} <span className="text-sm">DH</span></p>
+                            <p className="text-2xl font-bold text-laundry-text-primary">{totalPrice.toFixed(2)} <span className="text-sm text-laundry-text-secondary">DH</span></p>
                         </div>
                     )}
                 </div>

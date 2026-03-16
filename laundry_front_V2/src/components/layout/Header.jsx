@@ -1,14 +1,14 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, User, Bell, Search } from 'lucide-react';
+import { LogIn, Bell, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { selectCurrentUser } from '../../store/auth/authSelector';
 import { fetchPreteCount, fetchReadyOrders } from '../../store/livreur/livreurThunk';
-import { selectPreteCount, selectReadyOrders, selectSeenNotificationIds } from '../../store/livreur/livreurSelectors';
+import { selectReadyOrders, selectSeenNotificationIds } from '../../store/livreur/livreurSelectors';
 import { markNotificationsAsSeen } from '../../store/livreur/livreurSlice';
 import { fetchPendingCount, fetchPendingOrders } from '../../store/employe/employeThunk';
-import { selectPendingCount, selectPendingOrders, selectSeenNotificationIdsEmploye } from '../../store/employe/employeSelectors';
+import { selectPendingOrders, selectSeenNotificationIdsEmploye } from '../../store/employe/employeSelectors';
 import { markNotificationsAsSeen as markNotificationsAsSeenEmploye } from '../../store/employe/employeSlice';
 
 const Header = () => {
@@ -19,12 +19,10 @@ const Header = () => {
   const isAdmin = user?.role === 'admin';
 
   // Livreur selectors
-  const preteCount = useSelector(selectPreteCount);
   const readyOrders = useSelector(selectReadyOrders);
   const seenIdsLivreur = useSelector(selectSeenNotificationIds);
 
   // Employe selectors
-  const pendingCount = useSelector(selectPendingCount);
   const pendingOrders = useSelector(selectPendingOrders);
   const seenIdsEmploye = useSelector(selectSeenNotificationIdsEmploye);
 
@@ -114,26 +112,26 @@ const Header = () => {
       if (seenIds.includes(order.id)) return;
 
       const toastConfig = isLivreur ? {
-        title: "📦 Nouvelle commande prȇte !",
+        title: "Nouvelle commande prȇte",
         body: `Commande #${order.numeroCommande} est disponible.`,
         path: '/livreur/ready-for-delivery'
       } : {
-        title: "📦 Nouvelle commande !",
-        body: `Commande #${order.numeroCommande} créée par ${order.livreur?.name || 'un livreur'}.`,
+        title: "Nouvelle commande",
+        body: `Commande #${order.numeroCommande} créée.`,
         path: '/employe/dashboard'
       };
 
       toast.info(
         <div onClick={() => navigate(toastConfig.path)} className="cursor-pointer">
-          <p className="font-black uppercase tracking-widest text-[10px]">{toastConfig.title}</p>
-          <p className="text-[10px] font-bold text-laundry-primary mt-1">
+          <p className="font-semibold text-sm">{toastConfig.title}</p>
+          <p className="text-xs text-laundry-text-secondary mt-1">
             {toastConfig.body}
           </p>
-          <p className="text-[9px] opacity-70 mt-1">Cliquez pour voir la liste.</p>
         </div>,
         { 
           icon: <Bell size={16} className="text-laundry-primary" />,
-          toastId: `order-${order.id}`
+          toastId: `order-${order.id}`,
+          className: "rounded-lg shadow-card border border-laundry-border"
         }
       );
     });
@@ -150,32 +148,28 @@ const Header = () => {
     if (path.includes('/livreur/create-order')) return 'Nouvelle Commande';
     if (path.includes('/livreur/ready-for-delivery')) return 'Livraisons Prêtes';
     if (path.includes('/livreur/delivery')) return 'Détails Livraison';
-    return 'Pure Clean';
+    return 'Dashboard';
   };
 
   return (
-    <header className="h-16 md:h-20 bg-white/50 backdrop-blur-sm border-b border-laundry-sky/30 px-4 md:px-8 flex items-center justify-between sticky top-0 z-40 transition-all">
+    <header className="h-[60px] bg-white border-b border-laundry-border px-4 md:px-8 flex items-center justify-between sticky top-0 z-40 transition-all">
 
       {/* LEFT: CONTEXTUAL TITLE */}
-      <div className="flex flex-col">
-        <h2 className="text-lg md:text-xl font-black text-laundry-deep uppercase tracking-tighter leading-none">
+      <div className="flex items-center gap-4">
+        <h2 className="text-lg md:text-xl font-bold text-laundry-text-primary tracking-tight">
           {getPageTitle()}
         </h2>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-laundry-fresh"></div>
-          <span className="text-[10px] font-black text-laundry-primary uppercase tracking-[0.2em]">Live System</span>
-        </div>
       </div>
 
       {/* RIGHT: SEARCH & USER ACTIONS */}
-      <div className="flex items-center gap-3 md:gap-6">
-        {/* DESKTOP SEARCH (Placeholder) */}
-        <div className="hidden sm:flex items-center bg-laundry-sky/50 rounded-2xl px-4 py-2 border border-laundry-sky/50 group focus-within:bg-white transition-all">
-          <Search size={16} className="text-laundry-primary" />
+      <div className="flex items-center gap-4 md:gap-6">
+        {/* DESKTOP SEARCH */}
+        <div className="hidden sm:flex items-center bg-laundry-background rounded-full px-4 py-1.5 border border-laundry-border focus-within:ring-2 focus-within:ring-laundry-primary-light/50 transition-all">
+          <Search size={16} className="text-laundry-text-muted" />
           <input
             type="text"
-            placeholder="Rechercher..."
-            className="bg-transparent border-none outline-none text-xs font-bold text-laundry-deep px-2 placeholder:text-laundry-primary/40 w-32 md:w-48"
+            placeholder="Search..."
+            className="bg-transparent border-none outline-none text-sm text-laundry-text-primary px-3 w-40 md:w-56"
           />
         </div>
 
@@ -183,27 +177,25 @@ const Header = () => {
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={handleToggleNotifications}
-            className={`relative p-2 rounded-xl transition-all ${isNotificationsOpen ? 'bg-laundry-sky text-laundry-primary' : 'text-laundry-deep/60 hover:text-laundry-primary hover:bg-laundry-sky'}`}
+            className="relative p-2 rounded-full text-laundry-text-secondary hover:text-laundry-primary hover:bg-laundry-background transition-all outline-none focus:ring-2 focus:ring-laundry-primary/30"
           >
-            <Bell size={20} strokeWidth={2.5} />
+            <Bell size={20} strokeWidth={2} />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center px-1 animate-bounce">
-                {unreadCount}
-              </span>
+              <span className="absolute top-1 right-1.5 min-w-[8px] h-[8px] bg-red-500 rounded-full border-2 border-white"></span>
             )}
           </button>
 
-          {/* FACEBOOK STYLE DROPDOWN */}
+          {/* DROPDOWN */}
           {isNotificationsOpen && (
-            <div className="absolute right-0 mt-3 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-laundry-sky/30 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="p-4 border-b border-laundry-sky/20 flex items-center justify-between bg-laundry-sky/10">
-                <h3 className="text-sm font-black text-laundry-deep uppercase tracking-tighter">Notifications</h3>
-                <span className="text-[10px] font-bold text-laundry-primary bg-white px-2 py-0.5 rounded-full border border-laundry-sky">
+            <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-modal border border-laundry-border overflow-hidden z-50">
+              <div className="p-4 border-b border-laundry-border flex items-center justify-between bg-laundry-background/50">
+                <h3 className="text-sm font-semibold text-laundry-text-primary">Notifications</h3>
+                <span className="text-xs font-medium text-laundry-text-secondary bg-white px-2 py-0.5 rounded-full border border-laundry-border">
                   {notifications.length} au total
                 </span>
               </div>
 
-              <div className="max-h-[400px] overflow-y-auto">
+              <div className="max-h-[350px] overflow-y-auto">
                 {notifications.length > 0 ? (
                   notifications.map((order) => (
                     <div 
@@ -213,69 +205,53 @@ const Header = () => {
                         navigate(targetPath);
                         setIsNotificationsOpen(false);
                       }}
-                      className="p-4 border-b border-laundry-sky/10 hover:bg-laundry-sky/20 cursor-pointer transition-colors flex items-start gap-3"
+                      className="p-4 border-b border-laundry-border last:border-0 hover:bg-laundry-background/80 cursor-pointer transition-colors flex items-start gap-3"
                     >
-                      <div className="w-10 h-10 rounded-full bg-laundry-fresh/10 border border-laundry-fresh/20 flex items-center justify-center flex-shrink-0">
-                        <Bell size={18} className="text-laundry-fresh" />
+                      <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Bell size={16} className="text-laundry-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-laundry-deep leading-relaxed">
+                        <p className="text-sm text-laundry-text-primary">
                           {isLivreur ? (
-                            <>Votre commande <span className="font-black text-laundry-primary">#{order.numeroCommande}</span> est prête à être livrée !</>
+                            <>Commande <span className="font-semibold text-laundry-primary">#{order.numeroCommande}</span> prête !</>
                           ) : (
-                            <>Nouvelle commande <span className="font-black text-laundry-primary">#{order.numeroCommande}</span> créée par <span className="font-black">{order.livreur?.name}</span></>
+                            <>Commande <span className="font-semibold text-laundry-primary">#{order.numeroCommande}</span> créée</>
                           )}
                         </p>
-                        <p className="text-[10px] text-laundry-primary/60 mt-1 font-bold italic">
-                          {isLivreur ? "Rendez-vous à l'atelier pour la récupérer." : "Consultez les détails pour commencer le traitement."}
+                        <p className="text-xs text-laundry-text-secondary mt-1">
+                          {isLivreur ? "Récupérez-la à l'atelier." : "Nouvelle commande en attente."}
                         </p>
                       </div>
-                      {!seenIds.includes(order.id) && <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>}
+                      {!seenIds.includes(order.id) && <div className="w-2 h-2 rounded-full bg-laundry-primary mt-2 flex-shrink-0"></div>}
                     </div>
                   ))
                 ) : (
-                  <div className="p-12 text-center">
-                    <div className="w-16 h-16 bg-laundry-sky/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Bell size={24} className="text-laundry-primary/30" />
-                    </div>
-                    <p className="text-xs font-black text-laundry-primary/40 uppercase tracking-widest leading-tight">Aucune nouvelle<br/>notification</p>
+                  <div className="p-8 text-center text-laundry-text-muted">
+                    <p className="text-sm font-medium">Aucune nouvelle notification</p>
                   </div>
                 )}
               </div>
-
-              {notifications.length > 0 && (
-                <div className="p-3 bg-laundry-sky/5 text-center border-t border-laundry-sky/10">
-                  <button 
-                    onClick={() => {
-                      const targetPath = isLivreur ? '/livreur/ready-for-delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
-                      navigate(targetPath);
-                      setIsNotificationsOpen(false);
-                    }}
-                    className="text-[10px] font-black text-laundry-primary uppercase tracking-widest hover:underline"
-                  >
-                    {isLivreur ? "Voir toutes les livraisons" : "Voir toutes les commandes"}
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        {/* MOBILE USER AVATAR (Simplified) */}
+        {/* USER PROFILE */}
         {!user ? (
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 bg-laundry-primary text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-laundry-primary/20 hover:bg-laundry-deep transition-all active:scale-95"
+            className="flex items-center gap-2 bg-laundry-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-laundry-primary-light transition-all shadow-sm"
           >
-            <LogIn size={18} strokeWidth={3} />
-            <span className="hidden sm:inline uppercase">Connexion</span>
+            <LogIn size={16} />
+            <span className="hidden sm:inline">Connexion</span>
           </button>
         ) : (
-          <div className="md:hidden flex items-center gap-2 p-1 pr-3 bg-laundry-sky rounded-full border border-laundry-sky">
-            <div className="w-8 h-8 bg-laundry-primary text-white rounded-full flex items-center justify-center font-black text-xs">
+          <div className="flex items-center gap-3 pl-4 border-l-2 border-laundry-border">
+            <div className="hidden lg:flex flex-col items-end">
+              <span className="text-sm font-semibold text-laundry-text-primary truncate max-w-[120px]">{user.name}</span>
+            </div>
+            <div className="w-8 h-8 bg-laundry-sidebar-bg text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-laundry-primary transition-all">
               {user.name?.[0].toUpperCase()}
             </div>
-            <span className="text-[10px] font-black text-laundry-primary uppercase tracking-tighter truncate max-w-[60px]">{user.name}</span>
           </div>
         )}
       </div>

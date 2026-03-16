@@ -10,33 +10,15 @@ import {
   removeUser,
 } from '../../store/admin/adminThunk';
 import {
-  UserPlus,
-  Edit2,
-  Trash2,
-  Phone,
-  Mail,
-  Shield,
-  Power,
-  AlertTriangle,
-  X,
-  Search,
-  Users,
-  CheckCircle2,
-  XCircle,
-  ChevronRight,
-  MoreVertical,
-  Activity,
-  History,
-  Lock,
-  UserCheck,
-  Loader2
+  UserPlus, Edit2, Trash2, Shield, Power, Search, Users,
+  CheckCircle2, ChevronRight, Activity, History, Lock, Loader2
 } from 'lucide-react';
 import { clearError, clearSuccess } from '../../store/admin/adminSlice';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 
 const UserManagement = () => {
   const dispatch = useDispatch();
-  const { activeUsers, inactiveUsers, loading, error, success, message } = useSelector((state) => state.admin);
+  const { activeUsers, inactiveUsers, loading, error, success } = useSelector((state) => state.admin);
 
   const [activeTab, setActiveTab] = useState('active');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -52,11 +34,7 @@ const UserManagement = () => {
   });
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: 'employe',
-    password: ''
+    name: '', email: '', phone: '', role: 'employe', password: ''
   });
 
   useEffect(() => {
@@ -79,11 +57,7 @@ const UserManagement = () => {
     setSelectedUser(user);
     setIsAddingUser(false);
     setFormData({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      password: ''
+      name: user.name, email: user.email, phone: user.phone, role: user.role, password: ''
     });
   };
 
@@ -101,7 +75,7 @@ const UserManagement = () => {
   const handleToggleStatus = (user, isActive) => {
     setConfirmModal({
       isOpen: true,
-      title: isActive ? 'Désactiver ?' : 'Réactiver ?',
+      title: isActive ? 'Désactiver le compte ?' : 'Réactiver le compte ?',
       message: `${user.name} ne pourra plus se connecter. Confirmer ?`,
       type: isActive ? 'warning' : 'success',
       onConfirm: () => {
@@ -118,39 +92,38 @@ const UserManagement = () => {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-100px)] -m-4 md:-m-8 overflow-hidden animate-fade-in">
-
-      {/* 1. MASTER: USER LIST (LEFT) */}
-      <section className="w-full lg:w-[400px] border-r border-laundry-sky bg-white/50 backdrop-blur-sm flex flex-col">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-black text-laundry-deep uppercase tracking-tighter">Équipe</h2>
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-60px)] -m-4 sm:-m-6 lg:-m-8 bg-laundry-background">
+      
+      {/* LEFT: MASTER LIST */}
+      <aside className="w-full lg:w-[380px] bg-white border-r border-laundry-border flex flex-col h-full shrink-0">
+        <div className="p-4 sm:p-6 border-b border-laundry-border">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-laundry-text-primary tracking-tight">Utilisateurs</h2>
             <button
               onClick={() => { setIsAddingUser(true); setSelectedUser(null); setFormData({ name: '', email: '', phone: '', role: 'employe', password: '' }); }}
-              className="p-2 bg-laundry-primary text-white rounded-xl shadow-lg shadow-laundry-primary/20 hover:scale-110 transition-transform"
+              className="px-3 py-1.5 bg-laundry-primary text-white rounded-md text-sm font-medium hover:bg-laundry-primary-light transition-colors flex items-center gap-2"
             >
-              <UserPlus size={18} strokeWidth={3} />
+              <UserPlus size={16} /> <span className="hidden sm:inline">Nouveau</span>
             </button>
           </div>
 
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-laundry-deep/20" size={16} />
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-laundry-text-muted" size={16} />
             <input
               type="text"
-              placeholder="Rechercher..."
+              placeholder="Rechercher par nom ou email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border-2 border-laundry-sky rounded-2xl p-3 pl-11 text-xs font-bold text-laundry-deep outline-none focus:border-laundry-primary transition-all shadow-inner"
+              className="w-full bg-laundry-background border border-laundry-border rounded-md py-2 pl-9 pr-4 text-sm font-medium text-laundry-text-primary focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary outline-none transition-all placeholder:text-laundry-text-muted"
             />
           </div>
 
-          {/* SMALL TABS */}
-          <div className="flex bg-laundry-sky/50 p-1 rounded-xl">
+          <div className="flex bg-laundry-background p-1 rounded-md border border-laundry-border">
             {['active', 'inactive'].map(t => (
               <button
                 key={t}
                 onClick={() => setActiveTab(t)}
-                className={`flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === t ? 'bg-white text-laundry-primary shadow-sm' : 'text-laundry-deep/30'}`}
+                className={`flex-1 py-1.5 rounded text-xs font-semibold uppercase tracking-wider transition-colors ${activeTab === t ? 'bg-white text-laundry-primary shadow-sm' : 'text-laundry-text-secondary hover:text-laundry-text-primary'}`}
               >
                 {t === 'active' ? 'Actifs' : 'Inactifs'}
               </button>
@@ -158,161 +131,166 @@ const UserManagement = () => {
           </div>
         </div>
 
-        {/* SCROLLABLE LIST */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-10 space-y-2">
+        <div className="flex-1 overflow-y-auto w-full">
           {loading && filteredUsers.length === 0 ? (
-            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-laundry-primary" /></div>
+            <div className="flex justify-center p-8"><Loader2 className="animate-spin text-laundry-primary" /></div>
           ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-20 opacity-20"><Users size={48} className="mx-auto" /><p className="text-[10px] mt-2 font-black uppercase">Vide</p></div>
+            <div className="flex flex-col items-center justify-center p-8 text-center text-laundry-text-muted">
+              <Users size={32} className="mb-2 opacity-50" />
+              <p className="text-sm font-medium">Aucun utilisateur trouvé</p>
+            </div>
           ) : (
-            filteredUsers.map(user => (
-              <div
-                key={user.id}
-                onClick={() => handleSelectUser(user)}
-                className={`flex items-center gap-4 p-4 rounded-3xl cursor-pointer transition-all border-2 ${selectedUser?.id === user.id ? 'bg-white border-laundry-primary shadow-xl scale-[1.02]' : 'bg-transparent border-transparent hover:bg-white/40'}`}
-              >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-md ${activeTab === 'active' ? 'bg-laundry-primary' : 'bg-slate-400'}`}>
-                  {user.name[0].toUpperCase()}
+            <div className="divide-y divide-laundry-border">
+              {filteredUsers.map(user => (
+                <div
+                  key={user.id}
+                  onClick={() => handleSelectUser(user)}
+                  className={`flex items-center gap-3 p-4 cursor-pointer transition-colors ${selectedUser?.id === user.id ? 'bg-blue-50/50' : 'hover:bg-laundry-background/50'}`}
+                >
+                  <div className={`w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center font-bold text-sm text-white ${activeTab === 'active' ? 'bg-laundry-primary' : 'bg-laundry-text-muted'}`}>
+                    {user.name[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-laundry-text-primary truncate">{user.name}</p>
+                    <p className="text-xs text-laundry-text-secondary capitalize truncate">{user.role}</p>
+                  </div>
+                  {selectedUser?.id === user.id && <ChevronRight size={16} className="text-laundry-primary flex-shrink-0" />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-black text-laundry-deep truncate uppercase tracking-tight">{user.name}</h4>
-                  <span className="text-[9px] font-bold text-laundry-deep/30 uppercase tracking-widest">{user.role}</span>
-                </div>
-                <ChevronRight size={16} className={`${selectedUser?.id === user.id ? 'text-laundry-primary' : 'text-laundry-deep/10'}`} />
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
-      </section>
+      </aside>
 
-      {/* 2. DETAIL: CONTROL CENTER (RIGHT) */}
-      <section className="flex-1 bg-laundry-sky/10 overflow-y-auto p-4 md:p-10">
+      {/* RIGHT: DETAIL / EDIT VIEW */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {!selectedUser && !isAddingUser ? (
-          <div className="h-full flex flex-col items-center justify-center text-center gap-6 opacity-30">
-            <div className="w-32 h-32 bg-white rounded-[3rem] shadow-inner flex items-center justify-center">
-              <Shield size={64} />
+          <div className="h-full flex flex-col items-center justify-center text-center max-w-sm mx-auto animate-fade-in">
+            <div className="w-16 h-16 bg-white rounded-full shadow-card flex items-center justify-center mb-6 text-laundry-text-muted">
+              <Shield size={32} />
             </div>
-            <div className="space-y-1">
-              <h3 className="text-xl font-black text-laundry-deep uppercase tracking-tighter">Permission Center</h3>
-              <p className="text-xs font-bold uppercase tracking-widest">Sélectionnez un membre pour gérer ses accès</p>
-            </div>
+            <h3 className="text-xl font-bold text-laundry-text-primary mb-2">Gestion des accès</h3>
+            <p className="text-sm text-laundry-text-secondary leading-relaxed">
+              Sélectionnez un membre de votre équipe dans la liste de gauche pour configurer ses permissions, ou ajoutez un nouveau profil.
+            </p>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-8 animate-slide-up">
-            {/* DETAIL HEADER */}
-            <div className="bg-laundry-deep rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-laundry-primary/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse"></div>
-              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-[2rem] border-2 border-white/20 flex items-center justify-center text-4xl font-black text-laundry-fresh shadow-2xl">
-                  {isAddingUser ? <UserPlus size={40} /> : (selectedUser?.name[0].toUpperCase())}
-                </div>
-                <div className="text-center md:text-left space-y-2">
-                  <h2 className="text-4xl font-black uppercase tracking-tighter leading-none">{isAddingUser ? 'Nouveau Recrutement' : selectedUser.name}</h2>
-                  <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                    <span className="flex items-center gap-1.5 px-4 py-1.5 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
-                      <Shield size={12} className="text-laundry-fresh" /> {isAddingUser ? 'A définir' : selectedUser.role}
+          <div className="max-w-4xl mx-auto space-y-6 animate-slide-up">
+            {/* HEADER */}
+            <div className="bg-white border border-laundry-border rounded-xl shadow-card p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-laundry-primary to-laundry-accent"></div>
+              <div className="w-20 h-20 bg-laundry-background rounded-full border border-laundry-border flex items-center justify-center flex-shrink-0 text-3xl font-bold text-laundry-primary mt-2 sm:mt-0">
+                {isAddingUser ? <UserPlus size={32} /> : selectedUser?.name[0].toUpperCase()}
+              </div>
+              <div className="text-center sm:text-left pt-2">
+                <h2 className="text-2xl font-bold text-laundry-text-primary">
+                  {isAddingUser ? 'Nouveau Collaborateur' : selectedUser.name}
+                </h2>
+                <div className="flex flex-wrap justify-center sm:justify-start gap-3 mt-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-laundry-background rounded text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider border border-laundry-border">
+                    <Shield size={14} /> {isAddingUser ? 'À définir' : selectedUser.role}
+                  </span>
+                  {!isAddingUser && (
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase tracking-wider border ${activeTab === 'active' ? 'bg-laundry-success-light text-laundry-success border-laundry-success/20' : 'bg-laundry-error-light text-laundry-error border-laundry-error/20'}`}>
+                      <Activity size={14} /> {activeTab === 'active' ? 'Opérationnel' : 'Désactivé'}
                     </span>
-                    {!isAddingUser && (
-                      <span className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${activeTab === 'active' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                        <Activity size={12} /> {activeTab === 'active' ? 'Opérationnel' : 'Désactivé'}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* ACTION GRIDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* FORM CARD */}
-              <div className="glass bg-white rounded-[2.5rem] p-8 border-white shadow-xl space-y-8">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-laundry-sky text-laundry-primary rounded-2xl"><Edit2 size={20} /></div>
-                  <h3 className="font-black text-laundry-deep uppercase tracking-widest text-sm">Informations Profil</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* FORM */}
+              <div className="lg:col-span-2 bg-white border border-laundry-border rounded-xl shadow-card p-6">
+                <div className="flex items-center gap-2 mb-6 border-b border-laundry-border pb-4">
+                  <Edit2 size={18} className="text-laundry-text-muted" />
+                  <h3 className="font-semibold text-laundry-text-primary">Informations du Profil</h3>
                 </div>
 
-                <form onSubmit={isAddingUser ? handleCreate : handleUpdate} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-laundry-deep/30 px-1 uppercase tracking-widest">Nom Complet</label>
-                      <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-laundry-sky/30 border-2 border-transparent focus:border-laundry-primary p-4 rounded-2xl font-bold outline-none transition-all shadow-inner" placeholder="Ex: Jean Dupont" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-laundry-deep/30 px-1 uppercase tracking-widest">Email</label>
-                      <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-laundry-sky/30 border-2 border-transparent focus:border-laundry-primary p-4 rounded-2xl font-bold outline-none transition-all shadow-inner" placeholder="staff@company.com" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-laundry-deep/30 px-1 uppercase tracking-widest">Téléphone</label>
-                        <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-laundry-sky/30 border-2 border-transparent focus:border-laundry-primary p-4 rounded-2xl font-bold outline-none transition-all shadow-inner" placeholder="06..." />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-laundry-deep/30 px-1 uppercase tracking-widest">Rôle</label>
-                        <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full bg-laundry-sky/30 border-2 border-transparent focus:border-laundry-primary p-4 rounded-2xl font-bold outline-none transition-all shadow-inner">
-                          <option value="employe">Employé</option>
-                          <option value="livreur">Livreur</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                      </div>
-                    </div>
-                    {isAddingUser && (
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-laundry-deep/30 px-1 uppercase tracking-widest">Mot de Passe</label>
-                        <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full bg-laundry-sky/30 border-2 border-transparent focus:border-laundry-primary p-4 rounded-2xl font-bold outline-none transition-all shadow-inner" />
-                      </div>
-                    )}
+                <form onSubmit={isAddingUser ? handleCreate : handleUpdate} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-laundry-text-secondary mb-1">Nom Complet</label>
+                    <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md px-3 py-2 text-sm outline-none transition-all shadow-sm" placeholder="Ex: Jean Dupont" required />
                   </div>
-                  <button type="submit" disabled={loading} className="w-full bg-laundry-deep text-white py-5 rounded-[1.5rem] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-laundry-primary hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50">
-                    {loading ? 'Traitement...' : isAddingUser ? 'Engager maintenant' : 'Enregistrer Modifications'}
-                  </button>
+                  <div>
+                    <label className="block text-xs font-semibold text-laundry-text-secondary mb-1">Adresse Email</label>
+                    <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md px-3 py-2 text-sm outline-none transition-all shadow-sm" placeholder="email@exemple.com" required />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-laundry-text-secondary mb-1">Téléphone</label>
+                      <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md px-3 py-2 text-sm outline-none transition-all shadow-sm" placeholder="06..." required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-laundry-text-secondary mb-1">Rôle</label>
+                      <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md px-3 py-2 text-sm outline-none transition-all shadow-sm">
+                        <option value="employe">Employé</option>
+                        <option value="livreur">Livreur</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                  </div>
+                  {isAddingUser && (
+                    <div>
+                      <label className="block text-xs font-semibold text-laundry-text-secondary mb-1">Mot de Passe Provisoire</label>
+                      <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md px-3 py-2 text-sm outline-none transition-all shadow-sm" required />
+                    </div>
+                  )}
+                  
+                  <div className="pt-4 border-t border-laundry-border mt-6">
+                    <button type="submit" disabled={loading} className="w-full bg-laundry-primary text-white py-2.5 rounded-md text-sm font-semibold hover:bg-laundry-primary-light transition-colors disabled:opacity-50 shadow-sm">
+                      {loading ? 'Enregistrement...' : isAddingUser ? 'Créer le compte' : 'Sauvegarder les modifications'}
+                    </button>
+                  </div>
                 </form>
               </div>
 
-              {/* CONTROL CENTER TAB (RIGHT) */}
-              <div className="space-y-8">
+              {/* SECURITY ACTIONS */}
+              <div className="space-y-6">
                 {!isAddingUser && (
-                  <div className="glass bg-white rounded-[2.5rem] p-8 border-white shadow-xl space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-laundry-fresh text-laundry-deep rounded-2xl"><Lock size={20} /></div>
-                      <h3 className="font-black text-laundry-deep uppercase tracking-widest text-sm">Actions de Sécurité</h3>
+                  <div className="bg-white border border-laundry-border rounded-xl shadow-card p-6">
+                    <div className="flex items-center gap-2 mb-6 border-b border-laundry-border pb-4">
+                      <Lock size={18} className="text-laundry-text-muted" />
+                      <h3 className="font-semibold text-laundry-text-primary">Sécurité</h3>
                     </div>
                     <div className="space-y-3">
                       <button
                         onClick={() => handleToggleStatus(selectedUser, activeTab === 'active')}
-                        className={`w-full p-6 h-32 rounded-3xl border-2 flex flex-col items-center justify-center gap-2 transition-all active:scale-95 ${activeTab === 'active' ? 'bg-red-50 border-red-100 text-red-500 hover:bg-red-500 hover:text-white' : 'bg-green-50 border-green-100 text-green-500 hover:bg-green-500 hover:text-white'}`}
+                        className={`w-full py-4 border rounded-md flex flex-col items-center justify-center gap-2 transition-colors ${activeTab === 'active' ? 'bg-laundry-error-light border-laundry-error/20 text-laundry-error hover:bg-laundry-error hover:text-white' : 'bg-laundry-success-light border-laundry-success/20 text-laundry-success hover:bg-laundry-success hover:text-white'}`}
                       >
-                        <Power size={24} strokeWidth={3} />
-                        <span className="font-black uppercase tracking-[0.2em] text-xs">{activeTab === 'active' ? 'Révoquer les accès' : 'Rétablir les accès'}</span>
+                        <Power size={20} />
+                        <span className="font-semibold text-sm">{activeTab === 'active' ? 'Désactiver le compte' : 'Réactiver le compte'}</span>
                       </button>
 
                       {activeTab === 'inactive' && (
                         <button
                           onClick={() => { setConfirmModal({ isOpen: true, title: 'Suppression Définitive', message: `Supprimer ${selectedUser.name} de la base de données ?`, type: 'danger', onConfirm: () => { dispatch(removeUser(selectedUser.id)); setSelectedUser(null); setConfirmModal(prev => ({ ...prev, isOpen: false })); } }); }}
-                          className="w-full p-4 rounded-3xl border-2 border-transparent text-red-300 hover:text-red-500 font-black uppercase tracking-widest text-[9px] transition-colors"
+                          className="w-full py-2.5 bg-white border border-laundry-error text-laundry-error rounded-md text-sm font-semibold hover:bg-laundry-error hover:text-white transition-colors"
                         >
-                          Supprimer le compte définitivement
+                          Supprimer définitivement
                         </button>
                       )}
                     </div>
                   </div>
                 )}
 
-                <div className="glass bg-white rounded-[2.5rem] p-8 border-white shadow-xl space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-laundry-sky text-laundry-primary rounded-2xl"><History size={20} /></div>
-                    <h3 className="font-black text-laundry-deep uppercase tracking-widest text-sm">Registre d'Activité</h3>
+                <div className="bg-white border border-laundry-border rounded-xl shadow-card p-6">
+                  <div className="flex items-center gap-2 mb-4 border-b border-laundry-border pb-4">
+                    <History size={18} className="text-laundry-text-muted" />
+                    <h3 className="font-semibold text-laundry-text-primary">Journal d'Audit</h3>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-0 relative">
+                    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-laundry-border"></div>
                     {[
-                      { action: 'Connexion réussie', date: 'Aujourd\'hui, 09:42', type: 'success' },
-                      { action: 'Modification profil', date: 'Hier, 14:20', type: 'info' },
+                      { action: 'Connexion réussie', date: 'Aujourd\'hui', type: 'success' },
+                      { action: 'Profil modifié', date: 'Il y a 2 jours', type: 'info' },
                     ].map((log, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-laundry-sky/20 rounded-2xl border border-white/60">
-                        <div className="space-y-0.5">
-                          <p className="text-[11px] font-black text-laundry-deep uppercase tracking-tight">{log.action}</p>
-                          <p className="text-[9px] font-bold text-laundry-deep/30">{log.date}</p>
+                      <div key={i} className="flex items-start gap-4 py-3 relative z-10">
+                        <div className="w-3.5 h-3.5 rounded-full bg-white border-2 border-laundry-text-muted mt-1 shadow-sm"></div>
+                        <div>
+                          <p className="text-sm font-medium text-laundry-text-primary">{log.action}</p>
+                          <p className="text-xs text-laundry-text-secondary mt-0.5">{log.date}</p>
                         </div>
-                        <ChevronRight size={14} className="text-laundry-deep/10" />
                       </div>
                     ))}
                   </div>
@@ -321,9 +299,8 @@ const UserManagement = () => {
             </div>
           </div>
         )}
-      </section>
+      </main>
 
-      {/* CONFIRM MODAL */}
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}

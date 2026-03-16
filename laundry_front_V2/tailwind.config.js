@@ -2,30 +2,52 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}", 
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
-      // We can extend the font family here if you want a specific font later
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         laundry: {
-          sky: '#E0F2FE',
-          primary: '#0284C7',
-          deep: '#0C4A6E',
-          fresh: '#22D3EE',
-          soft: '#F1F5F9',
+          primary: '#1565C0',
+          'primary-light': '#1E88E5',
+          accent: '#00ACC1',
+          background: '#F0F4F8',
+          surface: '#FFFFFF',
+          'sidebar-bg': '#1A237E',
+          'sidebar-text': '#E3F2FD',
+          'text-primary': '#1A1A2E',
+          'text-secondary': '#546E7A',
+          'text-muted': '#90A4AE',
+          success: '#2E7D32',
+          'success-light': '#E8F5E9',
+          warning: '#F57F17',
+          'warning-light': '#FFFDE7',
+          error: '#C62828',
+          'error-light': '#FFEBEE',
+          border: '#E0E7EF',
         }
       },
+      boxShadow: {
+        'card': '0 2px 8px rgba(0,0,0,0.08)',
+        'card-hover': '0 6px 20px rgba(0,0,0,0.12)',
+        'sidebar': '4px 0 20px rgba(0,0,0,0.15)',
+        'modal': '0 20px 60px rgba(0,0,0,0.2)',
+      },
       animation: {
-        'float': 'float 3s ease-in-out infinite',
+        'fade-in': 'fadeIn 0.2s ease-out forwards',
+        'slide-up': 'slideUp 0.3s ease-out forwards',
       },
       keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         }
       }
     },
