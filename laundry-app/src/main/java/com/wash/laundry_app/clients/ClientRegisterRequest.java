@@ -13,6 +13,8 @@ public class ClientRegisterRequest {
     @Size(max = 255, message = "Le nom ne doit pas dépasser 255 caractères")
     private String name;
 
+    private String email;
+
     private List<ClientPhoneDto> phones;
 
     private List<ClientAddressDto> addresses;

@@ -1,130 +1,321 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import {
-    Users, Search, Loader2, ChevronRight,
-    Phone, MapPin, CalendarDays, ClipboardList
+import { 
+  Users, Search, Loader2, ChevronRight, Phone, 
+  MapPin, Calendar, RefreshCw, Star, 
+  TrendingUp, ShieldAlert, ArrowUpRight,
+  ShoppingCart, SlidersHorizontal, ChevronLeft
 } from 'lucide-react';
-import { fetchAllClients } from '../../store/admin/adminThunk';
+import { fetchAllClients, fetchClientStatistics } from '../../store/admin/adminThunk';
+import { selectAllClients, selectAdminLoading, selectClientStatistics } from '../../store/admin/adminSelectors';
+import { selectCurrentUser } from '../../store/auth/authSelector';
+import { toast } from 'react-toastify';
 
 export default function AllClients() {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const { clients, loading } = useSelector(s => s.admin);
-    const [search, setSearch] = useState('');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const clients = useSelector(selectAllClients);
+  const statistics = useSelector(selectClientStatistics);
+  const loading = useSelector(selectAdminLoading);
+  const user = useSelector(selectCurrentUser);
 
-    useEffect(() => { dispatch(fetchAllClients()); }, [dispatch]);
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-    const filtered = clients.filter(c =>
-        c.name?.toLowerCase().includes(search.toLowerCase()) ||
-        c.phone?.includes(search)
-    );
+  const loadData = useCallback(() => {
+    dispatch(fetchAllClients({ search: search || undefined }));
+    dispatch(fetchClientStatistics());
+  }, [dispatch, search]);
 
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadData();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
-    return (
-        <div className="space-y-6 animate-fade-in p-4 sm:p-6 lg:p-8">
+  const initials = (name) => {
+    if (!name) return '??';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
-            {/* HEADER */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
-                <div>
-                    <h1 className="text-2xl font-bold text-laundry-primary">
-                        Tous les Clients
-                    </h1>
-                    <p className="text-sm text-laundry-text-muted mt-1">
-                        Crm & Gestion des clients ({clients.length} enregistrés)
-                    </p>
-                </div>
-            </div>
+  const colorArray = [
+    'bg-blue-100 text-blue-700',
+    'bg-green-100 text-green-700',
+    'bg-yellow-100 text-yellow-700',
+    'bg-purple-100 text-purple-700',
+    'bg-pink-100 text-pink-700'
+  ];
 
-            {/* ACTIONS BAR (Search) */}
-            <div className="bg-white p-4 rounded-xl shadow-card border border-laundry-border">
-                <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-laundry-text-muted" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Rechercher par nom ou téléphone..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="w-full bg-laundry-background border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md py-2 pl-9 pr-4 text-sm outline-none transition-all shadow-sm"
-                    />
-                </div>
-            </div>
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return 'Aucune';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return "À l'instant";
+    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} min`;
+    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)} h`;
+    
+    const diffInDays = Math.floor(diffInSeconds / 86400);
+    if (diffInDays === 1) {
+      const hours = date.getHours().toString().padStart(2, '0');
+      const mins = date.getMinutes().toString().padStart(2, '0');
+      return `Hier à ${hours}:${mins}`;
+    }
+    if (diffInDays < 7) return `Il y a ${diffInDays} jours`;
+    
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  };
 
-            {/* CLIENT TABLE */}
-            {loading && filtered.length === 0 ? (
-                <div className="flex justify-center py-20 bg-white rounded-xl border border-laundry-border shadow-sm">
-                    <Loader2 size={32} className="animate-spin text-laundry-primary" />
-                </div>
-            ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-laundry-border shadow-sm text-center">
-                    <Users size={40} className="text-laundry-text-muted opacity-50 mb-4" />
-                    <p className="text-sm font-semibold text-laundry-text-secondary">Aucun client trouvé</p>
-                </div>
-            ) : (
-                <div className="bg-white rounded-xl shadow-card border border-laundry-border overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-laundry-background border-b border-laundry-border">
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Client</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Contact</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Adresse</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Inscrit le</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-right">Détails</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-laundry-border">
-                                {filtered.map(client => (
-                                    <tr 
-                                        key={client.id}
-                                        onClick={() => navigate(`/admin/clients/${client.id}`)}
-                                        className="hover:bg-laundry-background/50 cursor-pointer transition-colors group"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-laundry-primary/10 text-laundry-primary flex items-center justify-center font-bold text-xs flex-shrink-0">
-                                                    {client.name?.[0]?.toUpperCase() || '?'}
-                                                </div>
-                                                <span className="text-sm font-semibold text-laundry-text-primary group-hover:text-laundry-primary transition-colors truncate max-w-[150px]">
-                                                    {client.name}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-laundry-text-secondary">
-                                                <Phone size={14} className="text-laundry-text-muted" />
-                                                <span className="text-sm">{client.phone || '—'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {client.address ? (
-                                                <div className="flex items-center gap-2 text-laundry-text-secondary">
-                                                    <MapPin size={14} className="text-laundry-text-muted flex-shrink-0" />
-                                                    <span className="text-sm truncate max-w-[200px]">{client.address}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm text-laundry-text-muted">—</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-laundry-text-secondary">
-                                                <CalendarDays size={14} className="text-laundry-text-muted flex-shrink-0" />
-                                                <span className="text-sm">{formatDate(client.createdAt)}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="text-laundry-text-muted group-hover:text-laundry-primary transition-colors p-1">
-                                                <ChevronRight size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+  const formatDateShort = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const paginatedClients = useMemo(() => {
+    if (!Array.isArray(clients)) return [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return clients.slice(startIndex, startIndex + itemsPerPage);
+  }, [clients, currentPage]);
+
+  const totalPages = Math.ceil((clients?.length || 0) / itemsPerPage);
+
+  return (
+    <div className="space-y-6 pb-12 animate-fade-in">
+      
+      {/* PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Tous les clients</h1>
+          <p className="text-sm text-text-muted font-medium">Gérez votre base de données clients</p>
         </div>
-    );
+      </div>
+
+        {/* SEARCH BAR */}
+        <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm group focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/5 transition-all">
+          <Search size={18} className="text-text-muted group-focus-within:text-primary-500 transition-colors" />
+          <input 
+            type="text" 
+            placeholder="Rechercher un client par nom, email ou numéro de téléphone..." 
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="flex-1 text-sm text-text-primary placeholder:text-text-muted outline-none bg-transparent"
+          />
+          <button className="p-1.5 text-text-muted hover:text-text-primary hover:bg-background rounded-lg transition-all">
+            <SlidersHorizontal size={18} />
+          </button>
+        </div>
+
+        {/* STAT CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-surface rounded-xl shadow-card px-5 py-4 border border-border/50 flex items-center gap-4 hover:border-primary-100 transition-colors group">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-0.5">Total Clients</p>
+              <p className="text-2xl font-black text-text-primary tracking-tight">{statistics?.totalClients || clients?.length || 0}</p>
+            </div>
+          </div>
+          
+          <div className="bg-surface rounded-xl shadow-card px-5 py-4 border border-border/50 flex items-center gap-4 hover:border-primary-100 transition-colors group">
+            <div className="w-12 h-12 rounded-xl bg-green-50 text-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ShoppingCart size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-0.5">Commandes ce mois</p>
+              <p className="text-2xl font-black text-text-primary tracking-tight">{statistics?.commandesCeMois || 0}</p>
+            </div>
+          </div>
+
+          <div className="bg-surface rounded-xl shadow-card px-5 py-4 border border-border/50 flex items-center gap-4 hover:border-primary-100 transition-colors group">
+            <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <TrendingUp size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider mb-0.5">Nouveaux ce mois</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-black text-text-primary tracking-tight">{statistics?.nouveauxCeMois || 0}</p>
+                <span className="text-xs font-bold text-green-600">+{Math.round(statistics?.pourcentageNouveaux || 0)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* TABLE SECTION */}
+        <div className="bg-surface rounded-2xl shadow-card border border-border/50 overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-border">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Client</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Contact</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Dernière commande</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Commandes</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading && paginatedClients.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-20 text-center">
+                      <Loader2 size={32} className="animate-spin text-primary-400 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-text-muted">Chargement de la base clients...</p>
+                    </td>
+                  </tr>
+                ) : paginatedClients.length > 0 ? (
+                  paginatedClients.map((client, idx) => (
+                    <tr key={client.id} className="border-b border-border last:border-0 hover:bg-gray-50 transition-colors group">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${colorArray[idx % colorArray.length]}`}>
+                            {initials(client.name || client.nom)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-text-primary">
+                              {client.name || client.nom || `Client #${client.id}`}
+                            </p>
+                            <p className="text-xs text-text-muted mt-0.5">
+                              Client depuis le {formatDateShort(client.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-sm text-text-primary">
+                          {(client.phones && client.phones[0]?.phoneNumber) || 'Non renseigné'}
+                        </p>
+                        {client.email && (
+                          <p className="text-xs text-text-muted mt-0.5 truncate max-w-[200px]">{client.email}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-text-secondary">
+                          {getRelativeTime(client.lastOrderDate)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                          ${client.totalCommandes > 0 
+                            ? 'bg-primary-100 text-primary-600' 
+                            : 'bg-gray-100 text-text-muted'}`}>
+                          {client.totalCommandes || 0}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button 
+                          onClick={() => navigate(`/admin/clients/${client.id}`)}
+                          className="text-primary-500 text-sm font-medium hover:text-primary-600 cursor-pointer whitespace-nowrap"
+                        >
+                          Voir commandes &gt;
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="py-20 text-center">
+                      <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-border">
+                        <Search size={24} className="text-text-muted opacity-30" />
+                      </div>
+                      <p className="text-lg font-bold text-text-primary">Aucun résultat trouvé</p>
+                      <p className="text-sm text-text-muted mt-1">Essayez d'ajuster vos critères de recherche.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Stacked Layout (< md) */}
+          <div className="md:hidden divide-y divide-border">
+            {paginatedClients.map((client, idx) => (
+              <div key={client.id} className="p-4 hover:bg-slate-50 transition-all active:bg-slate-100" onClick={() => navigate(`/admin/clients/${client.id}`)}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${colorArray[idx % colorArray.length]}`}>
+                    {initials(client.name || client.nom)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-text-primary truncate">{client.name || client.nom || `Client #${client.id}`}</h3>
+                      <div className="px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-black">
+                        {client.totalCommandes || 0} CMD
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-text-muted italic">Client depuis {formatDateShort(client.createdAt)}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="bg-background rounded-lg p-2 border border-border/50">
+                    <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Téléphone</p>
+                    <p className="text-xs font-semibold text-text-primary truncate">{(client.phones && client.phones[0]?.phoneNumber) || '—'}</p>
+                  </div>
+                  <div className="bg-background rounded-lg p-2 border border-border/50">
+                    <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Dernière commande</p>
+                    <p className="text-xs font-semibold text-text-secondary truncate">{getRelativeTime(client.lastOrderDate)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-text-muted">
+                    <MapPin size={12} />
+                    <span className="text-[10px] font-medium truncate max-w-[150px]">{(client.addresses && client.addresses[0]?.addressLine1) || 'Pas d\'adresse'}</span>
+                  </div>
+                  <span className="text-xs font-bold text-primary-600 flex items-center gap-1">Détails <ChevronRight size={14} /></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* PAGINATION */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <p className="text-sm text-text-muted font-medium">
+              Affichage de <span className="font-bold text-text-primary">{(currentPage - 1) * itemsPerPage + 1}</span> à <span className="font-bold text-text-primary">{Math.min(currentPage * itemsPerPage, clients?.length || 0)}</span> sur <span className="font-bold text-text-primary">{clients?.length || 0}</span> clients
+            </p>
+            <div className="flex items-center gap-2">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-surface text-sm font-bold text-text-secondary hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft size={16} />
+                Précédent
+              </button>
+              <div className="flex gap-1">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`w-9 h-9 rounded-xl text-sm font-bold transition-all ${currentPage === i + 1 ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'bg-surface border border-border text-text-secondary hover:bg-slate-50'}`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <button 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-surface text-sm font-bold text-text-secondary hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Suivant
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+  );
 }

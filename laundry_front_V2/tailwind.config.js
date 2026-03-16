@@ -1,56 +1,86 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
       colors: {
-        laundry: {
-          primary: '#1565C0',
-          'primary-light': '#1E88E5',
-          accent: '#00ACC1',
-          background: '#F0F4F8',
-          surface: '#FFFFFF',
-          'sidebar-bg': '#1A237E',
-          'sidebar-text': '#E3F2FD',
-          'text-primary': '#1A1A2E',
-          'text-secondary': '#546E7A',
-          'text-muted': '#90A4AE',
-          success: '#2E7D32',
-          'success-light': '#E8F5E9',
-          warning: '#F57F17',
-          'warning-light': '#FFFDE7',
-          error: '#C62828',
-          'error-light': '#FFEBEE',
-          border: '#E0E7EF',
-        }
-      },
-      boxShadow: {
-        'card': '0 2px 8px rgba(0,0,0,0.08)',
-        'card-hover': '0 6px 20px rgba(0,0,0,0.12)',
-        'sidebar': '4px 0 20px rgba(0,0,0,0.15)',
-        'modal': '0 20px 60px rgba(0,0,0,0.2)',
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.2s ease-out forwards',
-        'slide-up': 'slideUp 0.3s ease-out forwards',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
+        primary: {
+          50: '#FFF7ED',
+          100: '#FFEDD5',
+          200: '#FED7AA',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: '#F97316',
+          600: '#EA6C0A',
+          700: '#C2550A',
+          800: '#9A3C07',
+          900: '#7C2D04',
         },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        }
-      }
+        background: '#F8F9FA',
+        surface: '#FFFFFF',
+        border: '#F1F3F5',
+        'text-primary': '#0F172A',
+        'text-secondary': '#64748B',
+        'text-muted': '#94A3B8',
+        // was #F8F9FC
+
+        accent: {
+          purple: { DEFAULT: '#F3F0FF', text: '#7C3AED', icon: '#8B5CF6' },
+          teal: { DEFAULT: '#F0FDF9', text: '#0F766E', icon: '#14B8A6' },
+          orange: { DEFAULT: '#FFF7ED', text: '#C2410C', icon: '#F97316' },
+          pink: { DEFAULT: '#FDF2F8', text: '#9D174D', icon: '#EC4899' },
+          blue: { DEFAULT: '#EFF6FF', text: '#1D4ED8', icon: '#3B82F6' },
+          green: { DEFAULT: '#F0FDF4', text: '#15803D', icon: '#22C55E' },
+        },
+
+        status: {
+          en_attente: { DEFAULT: '#FFF7ED', text: '#C2410C', border: '#FED7AA' },
+          validee: { DEFAULT: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
+          en_traitement: { DEFAULT: '#F5F3FF', text: '#6D28D9', border: '#DDD6FE' },
+          prete: { DEFAULT: '#F0FDF4', text: '#15803D', border: '#BBF7D0' },
+          livree: { DEFAULT: '#F0FDF4', text: '#166534', border: '#86EFAC' },
+          payee: { DEFAULT: '#ECFDF5', text: '#065F46', border: '#6EE7B7' },
+          annulee: { DEFAULT: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
+          retour: { DEFAULT: '#FFF1F2', text: '#BE123C', border: '#FECDD3' },
+        },
+      },
+
+      boxShadow: {
+        card: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+        'card-hover': '0 8px 24px rgba(0,0,0,0.08)',
+        sidebar: '2px 0 12px rgba(0,0,0,0.06)',
+        modal: '0 20px 60px rgba(0,0,0,0.15)',
+        topbar: '0 1px 0 #F1F3F8',
+      },
+
+      borderRadius: {
+        sm: '6px',
+        md: '10px',
+        lg: '14px',
+        xl: '18px',
+        '2xl': '24px',
+        full: '9999px',
+      },
+
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
+
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'pulse-dot': 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
+      },
+
+      keyframes: {
+        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+        slideUp: { from: { opacity: 0, transform: 'translateY(12px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+      },
     },
   },
   plugins: [],
-}
+};

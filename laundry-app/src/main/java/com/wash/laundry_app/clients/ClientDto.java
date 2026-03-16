@@ -11,9 +11,12 @@ public class ClientDto {
 
     private Long id;
     private String name;
+    private String email;
     private List<ClientPhoneDto> phones;
     private List<ClientAddressDto> addresses;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long totalCommandes;
+    private LocalDateTime lastOrderDate;
 }
 

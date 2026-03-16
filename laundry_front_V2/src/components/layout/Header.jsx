@@ -1,14 +1,14 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, Bell, Search } from 'lucide-react';
+import { LogIn, Bell, Search, Menu, Package } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { selectCurrentUser } from '../../store/auth/authSelector';
 import { fetchPreteCount, fetchReadyOrders } from '../../store/livreur/livreurThunk';
-import { selectReadyOrders, selectSeenNotificationIds } from '../../store/livreur/livreurSelectors';
+import { selectPreteCount, selectReadyOrders, selectSeenNotificationIds } from '../../store/livreur/livreurSelectors';
 import { markNotificationsAsSeen } from '../../store/livreur/livreurSlice';
 import { fetchPendingCount, fetchPendingOrders } from '../../store/employe/employeThunk';
-import { selectPendingOrders, selectSeenNotificationIdsEmploye } from '../../store/employe/employeSelectors';
+import { selectPendingCount, selectPendingOrders, selectSeenNotificationIdsEmploye } from '../../store/employe/employeSelectors';
 import { markNotificationsAsSeen as markNotificationsAsSeenEmploye } from '../../store/employe/employeSlice';
 
 const Header = () => {
@@ -19,10 +19,12 @@ const Header = () => {
   const isAdmin = user?.role === 'admin';
 
   // Livreur selectors
+  const preteCount = useSelector(selectPreteCount);
   const readyOrders = useSelector(selectReadyOrders);
   const seenIdsLivreur = useSelector(selectSeenNotificationIds);
 
   // Employe selectors
+  const pendingCount = useSelector(selectPendingCount);
   const pendingOrders = useSelector(selectPendingOrders);
   const seenIdsEmploye = useSelector(selectSeenNotificationIdsEmploye);
 
@@ -34,8 +36,6 @@ const Header = () => {
   // Unified Notification Data & Daily Cleanup
   const notifications = React.useMemo(() => {
     const rawList = isLivreur ? readyOrders : (isEmploye || isAdmin ? pendingOrders : []);
-    
-    // Cleanup: Filter to show only notifications from TODAY
     const today = new Date().setHours(0, 0, 0, 0);
     return rawList.filter(order => {
       const orderDate = new Date(order.createdAt || order.dateCreation).setHours(0, 0, 0, 0);
@@ -57,10 +57,9 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 🔔 GLOBAL NOTIFICATIONS: Poll based on role
+  // Poll notifications based on role
   React.useEffect(() => {
     if (!user?.role) return;
-
     const poll = () => {
       if (isLivreur) {
         dispatch(fetchPreteCount());
@@ -70,7 +69,6 @@ const Header = () => {
         dispatch(fetchPendingOrders());
       }
     };
-    
     poll();
     const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
@@ -79,14 +77,9 @@ const Header = () => {
   const handleToggleNotifications = () => {
     const nextState = !isNotificationsOpen;
     setIsNotificationsOpen(nextState);
-    
-    // Facebook style: mark all as seen as soon as we open the dropdown
     if (nextState && unreadCount > 0) {
-      if (isLivreur) {
-        dispatch(markNotificationsAsSeen());
-      } else if (isEmploye || isAdmin) {
-        dispatch(markNotificationsAsSeenEmploye());
-      }
+      if (isLivreur) dispatch(markNotificationsAsSeen());
+      else if (isEmploye || isAdmin) dispatch(markNotificationsAsSeenEmploye());
     }
   };
 
@@ -96,141 +89,196 @@ const Header = () => {
   // Toast alerts for NEW orders
   React.useEffect(() => {
     if (!user?.role || !notifications) return;
-
-    // Filter for orders that were not in the previous set
     const newItems = notifications.filter(order => !prevReadyOrdersIds.current.has(order.id));
-
-    // skip toasts on first load after refresh - just populate the ref
     if (isFirstLoad.current) {
-        notifications.forEach(o => prevReadyOrdersIds.current.add(o.id));
-        seenIds.forEach(id => prevReadyOrdersIds.current.add(id));
-        isFirstLoad.current = false;
-        return;
+      notifications.forEach(o => prevReadyOrdersIds.current.add(o.id));
+      seenIds.forEach(id => prevReadyOrdersIds.current.add(id));
+      isFirstLoad.current = false;
+      return;
     }
-
     newItems.forEach(order => {
       if (seenIds.includes(order.id)) return;
-
       const toastConfig = isLivreur ? {
-        title: "Nouvelle commande prȇte",
+        title: '📦 Nouvelle commande prête !',
         body: `Commande #${order.numeroCommande} est disponible.`,
         path: '/livreur/ready-for-delivery'
       } : {
-        title: "Nouvelle commande",
-        body: `Commande #${order.numeroCommande} créée.`,
+        title: '📦 Nouvelle commande !',
+        body: `Commande #${order.numeroCommande} créée par ${order.livreur?.name || 'un livreur'}.`,
         path: '/employe/dashboard'
       };
-
       toast.info(
         <div onClick={() => navigate(toastConfig.path)} className="cursor-pointer">
           <p className="font-semibold text-sm">{toastConfig.title}</p>
-          <p className="text-xs text-laundry-text-secondary mt-1">
-            {toastConfig.body}
-          </p>
+          <p className="text-xs text-primary-600 mt-0.5">{toastConfig.body}</p>
+          <p className="text-xs text-text-muted mt-1">Cliquez pour voir.</p>
         </div>,
-        { 
-          icon: <Bell size={16} className="text-laundry-primary" />,
-          toastId: `order-${order.id}`,
-          className: "rounded-lg shadow-card border border-laundry-border"
-        }
+        { icon: <Bell size={16} className="text-primary-600" />, toastId: `order-${order.id}` }
       );
     });
-
     prevReadyOrdersIds.current = new Set(notifications.map(o => o.id));
   }, [notifications, user, navigate, seenIds, isLivreur]);
 
-  // CONTEXTUAL TITLE LOGIC
+  // Page title
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path.includes('/admin/users-management')) return 'Gestion Utilisateurs';
-    if (path.includes('/livreur/dashboard')) return 'Tableau de Bord';
-    if (path.includes('/livreur/register-client')) return 'Enregistrement Client';
-    if (path.includes('/livreur/create-order')) return 'Nouvelle Commande';
+    if (path.includes('/admin/dashboard'))         return 'Tableau de Bord';
+    if (path.includes('/admin/users-management'))  return 'Gestion Utilisateurs';
+    if (path.includes('/admin/commandes'))         return 'Commandes';
+    if (path.includes('/admin/clients'))           return 'Clients';
+    if (path.includes('/livreur/dashboard'))       return 'Tableau de Bord';
+    if (path.includes('/livreur/register-client')) return 'Gestion Clients';
+    if (path.includes('/livreur/create-order'))    return 'Nouvelle Collecte';
     if (path.includes('/livreur/ready-for-delivery')) return 'Livraisons Prêtes';
-    if (path.includes('/livreur/delivery')) return 'Détails Livraison';
-    return 'Dashboard';
+    if (path.includes('/livreur/canceled-deliveries')) return 'Commandes Annulées';
+    if (path.includes('/employe/dashboard'))       return 'Atelier de Traitement';
+    if (path.includes('/employe/commandes'))       return 'Détail Commande';
+    if (path.includes('/employe/retours'))         return 'Retours Atelier';
+    return 'PureClean';
   };
 
-  return (
-    <header className="h-[60px] bg-white border-b border-laundry-border px-4 md:px-8 flex items-center justify-between sticky top-0 z-40 transition-all">
+  const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?';
 
-      {/* LEFT: CONTEXTUAL TITLE */}
-      <div className="flex items-center gap-4">
-        <h2 className="text-lg md:text-xl font-bold text-laundry-text-primary tracking-tight">
-          {getPageTitle()}
-        </h2>
+  return (
+    <header className="fixed top-0 right-0 left-0 md:left-16 lg:left-60 h-16 bg-surface shadow-topbar px-4 md:px-8 flex items-center justify-between z-30 transition-all duration-300">
+      
+      {/* LEFT: Greeting (Desktop) / Page title (Mobile) */}
+      <div className="flex flex-col">
+        <h1 className="text-sm md:text-base font-bold text-text-primary flex items-center gap-2">
+          <span className="hidden md:inline">Bonjour,</span> {user?.name || 'Administrateur'} 
+          <span className="hidden md:inline text-xl">👋</span>
+        </h1>
+        <p className="text-[10px] md:text-xs text-text-muted hidden md:block">
+          Heureux de vous revoir, voici l'activité du jour.
+        </p>
       </div>
 
-      {/* RIGHT: SEARCH & USER ACTIONS */}
-      <div className="flex items-center gap-4 md:gap-6">
-        {/* DESKTOP SEARCH */}
-        <div className="hidden sm:flex items-center bg-laundry-background rounded-full px-4 py-1.5 border border-laundry-border focus-within:ring-2 focus-within:ring-laundry-primary-light/50 transition-all">
-          <Search size={16} className="text-laundry-text-muted" />
+      {/* CENTER: Search Bar (Desktop) */}
+      <div className="hidden lg:flex flex-1 max-w-md mx-8">
+        <div className="w-full flex items-center gap-3 bg-background border border-border rounded-2xl px-4 py-2 hover:border-primary-300 transition-colors group">
+          <Search size={18} className="text-text-muted group-focus-within:text-primary-500 transition-colors" />
           <input
             type="text"
-            placeholder="Search..."
-            className="bg-transparent border-none outline-none text-sm text-laundry-text-primary px-3 w-40 md:w-56"
+            placeholder="Rechercher une commande, un client..."
+            className="bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-muted w-full"
           />
+          <div className="flex items-center gap-1 bg-surface border border-border px-1.5 py-0.5 rounded-md text-[10px] text-text-muted font-bold shadow-sm">
+            <span className="text-[8px]">⌘</span>K
+          </div>
         </div>
+      </div>
 
-        {/* NOTIFICATIONS */}
+      {/* RIGHT: Actions & Profile */}
+      <div className="flex items-center gap-3 md:gap-4">
+        
+        {/* MOBILE SEARCH ICON */}
+        <button className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl text-text-muted hover:bg-background hover:text-text-primary transition-colors">
+          <Search size={20} />
+        </button>
+
+        {/* NOTIFICATIONS BELL */}
         <div className="relative" ref={dropdownRef}>
-          <button 
+          <button
             onClick={handleToggleNotifications}
-            className="relative p-2 rounded-full text-laundry-text-secondary hover:text-laundry-primary hover:bg-laundry-background transition-all outline-none focus:ring-2 focus:ring-laundry-primary/30"
+            className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200
+              ${isNotificationsOpen 
+                ? 'bg-primary-50 text-primary-600 shadow-sm' 
+                : 'text-text-muted hover:bg-background hover:text-text-primary'}`}
           >
-            <Bell size={20} strokeWidth={2} />
+            <Bell size={22} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1.5 min-w-[8px] h-[8px] bg-red-500 rounded-full border-2 border-white"></span>
+              <span className="absolute top-2 right-2 w-4 h-4 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-surface animate-pulse-dot">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
             )}
           </button>
 
-          {/* DROPDOWN */}
+          {/* Notification Dropdown */}
           {isNotificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-xl shadow-modal border border-laundry-border overflow-hidden z-50">
-              <div className="p-4 border-b border-laundry-border flex items-center justify-between bg-laundry-background/50">
-                <h3 className="text-sm font-semibold text-laundry-text-primary">Notifications</h3>
-                <span className="text-xs font-medium text-laundry-text-secondary bg-white px-2 py-0.5 rounded-full border border-laundry-border">
-                  {notifications.length} au total
-                </span>
+            <div className="absolute right-0 mt-3 w-80 md:w-96 bg-surface rounded-2xl shadow-modal border border-border overflow-hidden z-50 animate-fade-in origin-top-right">
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-surface">
+                <div>
+                  <h3 className="text-sm font-bold text-text-primary">Notifications</h3>
+                  <p className="text-[10px] text-text-muted">Vous avez {unreadCount} messages non lus</p>
+                </div>
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={() => {
+                      if (isLivreur) dispatch(markNotificationsAsSeen());
+                      else if (isEmploye || isAdmin) dispatch(markNotificationsAsSeenEmploye());
+                    }}
+                    className="text-[10px] font-bold text-primary-600 hover:text-primary-700 underline"
+                  >
+                    Tout lire
+                  </button>
+                )}
               </div>
 
-              <div className="max-h-[350px] overflow-y-auto">
+              <div className="max-h-[400px] overflow-y-auto">
                 {notifications.length > 0 ? (
-                  notifications.map((order) => (
-                    <div 
-                      key={order.id}
-                      onClick={() => {
-                        const targetPath = isLivreur ? '/livreur/ready-for-delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
-                        navigate(targetPath);
-                        setIsNotificationsOpen(false);
-                      }}
-                      className="p-4 border-b border-laundry-border last:border-0 hover:bg-laundry-background/80 cursor-pointer transition-colors flex items-start gap-3"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
-                        <Bell size={16} className="text-laundry-primary" />
+                  notifications.map((order) => {
+                    const isNew = !seenIds.includes(order.id);
+                    return (
+                      <div
+                        key={order.id}
+                        onClick={() => {
+                          const target = isLivreur ? '/livreur/ready-for-delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
+                          navigate(target);
+                          setIsNotificationsOpen(false);
+                        }}
+                        className={`px-5 py-4 border-b border-border last:border-0 hover:bg-background cursor-pointer flex items-start gap-4 transition-all
+                          ${isNew ? 'bg-primary-50/30' : ''}`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm
+                          ${isNew ? 'bg-primary-100 text-primary-600' : 'bg-background text-text-muted'}`}>
+                          <Package size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-[10px] font-bold uppercase tracking-wider ${isNew ? 'text-primary-600' : 'text-text-muted'}`}>
+                              {isLivreur ? 'Commande Prête' : 'Nouvelle Commande'}
+                            </span>
+                            <span className="text-[10px] text-text-muted">Aujourd'hui</span>
+                          </div>
+                          <p className="text-xs text-text-primary leading-snug">
+                            {isLivreur ? (
+                              <>La commande <span className="font-bold">#{order.numeroCommande}</span> est prête pour la livraison.</>
+                            ) : (
+                              <>Une nouvelle commande <span className="font-bold">#{order.numeroCommande}</span> a été créée par {order.livreur?.name}.</>
+                            )}
+                          </p>
+                        </div>
+                        {isNew && (
+                          <div className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0 mt-2" />
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-laundry-text-primary">
-                          {isLivreur ? (
-                            <>Commande <span className="font-semibold text-laundry-primary">#{order.numeroCommande}</span> prête !</>
-                          ) : (
-                            <>Commande <span className="font-semibold text-laundry-primary">#{order.numeroCommande}</span> créée</>
-                          )}
-                        </p>
-                        <p className="text-xs text-laundry-text-secondary mt-1">
-                          {isLivreur ? "Récupérez-la à l'atelier." : "Nouvelle commande en attente."}
-                        </p>
-                      </div>
-                      {!seenIds.includes(order.id) && <div className="w-2 h-2 rounded-full bg-laundry-primary mt-2 flex-shrink-0"></div>}
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
-                  <div className="p-8 text-center text-laundry-text-muted">
-                    <p className="text-sm font-medium">Aucune nouvelle notification</p>
+                  <div className="py-12 text-center">
+                    <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Bell size={24} className="text-text-muted" />
+                    </div>
+                    <p className="text-sm font-medium text-text-primary">Pas de nouvelles notifications</p>
+                    <p className="text-xs text-text-muted mt-1">Nous vous préviendrons dès qu'il y aura du nouveau.</p>
                   </div>
                 )}
               </div>
+
+              {notifications.length > 0 && (
+                <div className="px-5 py-3 border-t border-border bg-background/50 text-center">
+                  <button
+                    onClick={() => {
+                      const target = isLivreur ? '/livreur/ready-for-delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
+                      navigate(target);
+                      setIsNotificationsOpen(false);
+                    }}
+                    className="text-xs font-bold text-text-primary hover:text-primary-600 transition-colors"
+                  >
+                    Voir tout l'historique
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -239,18 +287,25 @@ const Header = () => {
         {!user ? (
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 bg-laundry-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-laundry-primary-light transition-all shadow-sm"
+            className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-700 transition-all flex items-center gap-2 active:scale-95"
           >
-            <LogIn size={16} />
-            <span className="hidden sm:inline">Connexion</span>
+            <LogIn size={18} />
+            <span className="hidden sm:inline">Se connecter</span>
           </button>
         ) : (
-          <div className="flex items-center gap-3 pl-4 border-l-2 border-laundry-border">
-            <div className="hidden lg:flex flex-col items-end">
-              <span className="text-sm font-semibold text-laundry-text-primary truncate max-w-[120px]">{user.name}</span>
+          <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-border ml-2">
+            <div className="hidden md:flex flex-col text-right">
+              <span className="text-xs font-bold text-text-primary leading-none mb-1 truncate max-w-[120px]">
+                {user.name}
+              </span>
+              <span className="text-[10px] font-medium text-text-muted capitalize">
+                {user.role}
+              </span>
             </div>
-            <div className="w-8 h-8 bg-laundry-sidebar-bg text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-laundry-primary transition-all">
-              {user.name?.[0].toUpperCase()}
+            <div className="w-10 h-10 rounded-full border-2 border-primary-100 p-0.5 cursor-pointer hover:border-primary-300 transition-colors">
+              <div className="w-full h-full rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-bold shadow-inner">
+                {initials}
+              </div>
             </div>
           </div>
         )}

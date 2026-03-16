@@ -10,7 +10,8 @@ import {
     fetchAllCommandes,
     fetchCommandeById,
     fetchAllClients,
-    fetchClientCommandes
+    fetchClientCommandes,
+    fetchClientStatistics
 } from "./adminThunk";
 
 const initialState = {
@@ -22,6 +23,7 @@ const initialState = {
     clients: [],
     clientCommandes: [],
     selectedClient: null,
+    clientStatistics: null,
     loading: false,
     error: null,
     success: false,
@@ -267,6 +269,20 @@ const adminSlice = createSlice({
             .addCase(fetchClientCommandes.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.message || "Erreur chargement commandes client";
+            })
+            
+            // --- FETCH CLIENT STATISTICS ---
+            .addCase(fetchClientStatistics.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchClientStatistics.fulfilled, (state, action) => {
+                state.loading = false;
+                state.clientStatistics = action.payload;
+            })
+            .addCase(fetchClientStatistics.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload?.message || "Erreur chargement statistiques clients";
             });
     }
 });

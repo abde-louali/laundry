@@ -35,8 +35,12 @@ export const deleteUser = async (id) => {
 
 // ========== COMMANDES ENDPOINTS ==========
 
-export const getAllCommandes = async () => {
-    return await api.get('/admin/commandes');
+export const getAllCommandes = async (params = {}) => {
+    return await api.get('/admin/commandes', { params });
+}
+
+export const exportCommandesCsv = async () => {
+    return await api.get('/admin/commandes/export-csv', { responseType: 'blob' });
 }
 
 export const getCommandeById = async (id) => {
@@ -45,8 +49,12 @@ export const getCommandeById = async (id) => {
 
 // ========== CLIENTS ENDPOINTS ==========
 
-export const getAllClients = async () => {
-    return await api.get('/admin/clients');
+export const getAllClients = async (params = {}) => {
+    return await api.get('/admin/clients', { params });
+}
+
+export const getClientStatistics = async () => {
+    return await api.get('/admin/clients/statistics');
 }
 
 export const getClientCommandes = async (clientId) => {

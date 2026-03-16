@@ -71,9 +71,24 @@ public class AdminController {
 
 //    get all commandes
     @GetMapping("/commandes")
-    public ResponseEntity<List<CommandSummaryDto>> allCommandes() {
-        List<CommandSummaryDto> commandes = adminService.getCommands();
+    public ResponseEntity<List<CommandSummaryDto>> allCommandes(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) String sort) {
+        List<CommandSummaryDto> commandes = adminService.getFilteredCommands(status, dateDebut, dateFin, search, limit, sort);
         return ResponseEntity.ok(commandes);
+    }
+
+    @GetMapping("/commandes/export-csv")
+    public ResponseEntity<byte[]> exportCommandesCsv() {
+        byte[] csvData = adminService.exportCommandesToCsv();
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.set(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=commandes.csv");
+        headers.set(org.springframework.http.HttpHeaders.CONTENT_TYPE, "text/csv");
+        return new ResponseEntity<>(csvData, headers, HttpStatus.OK);
     }
 
     // Get commande details
@@ -84,9 +99,15 @@ public class AdminController {
 
     // Get clients
     @GetMapping("/clients")
-    public ResponseEntity<List<ClientDto>> getClients() {
-        List<ClientDto> clients = adminService.getClients();
+    public ResponseEntity<List<ClientDto>> getClients(
+            @RequestParam(required = false) String search) {
+        List<ClientDto> clients = adminService.getClientsFiltered(search);
         return ResponseEntity.ok(clients);
+    }
+
+    @GetMapping("/clients/statistics")
+    public ResponseEntity<ClientStatisticsDto> getClientStatistics() {
+        return ResponseEntity.ok(adminService.getClientStatistics());
     }
 
 
@@ -303,3 +324,5 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body("invalid email");
     }
 }
+
+

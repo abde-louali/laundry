@@ -15,7 +15,7 @@ const Layout = () => {
   // LOGIN PAGE STRUCTURAL EXEMPTION
   if (isLoginPage) {
     return (
-      <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <div className="min-h-screen bg-background font-sans flex flex-col">
         <main className="flex-grow flex items-center justify-center">
           <Outlet />
         </main>
@@ -25,17 +25,17 @@ const Layout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-row overflow-hidden">
-      {/* 1. DESKTOP SIDEBAR */}
+    <div className="min-h-screen bg-background font-sans flex flex-col transition-all duration-300">
+      {/* 1. DESKTOP SIDEBAR (Fixed) */}
       {user && <Sidebar user={user} />}
 
       {/* 2. MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col h-screen relative overflow-hidden">
-        {/* CONTEXTUAL TOP HEADER */}
+      <div className={`flex-1 flex flex-col h-screen relative transition-all duration-300 ${user ? 'md:ml-16 lg:ml-60' : 'ml-0'}`}>
+        {/* CONTEXTUAL TOP HEADER (Fixed) */}
         <Header />
 
         {/* SCROLLABLE CONTENT BODY */}
-        <main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 pb-32 md:pb-8">
+        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 pt-20 pb-32 md:pb-8 scroll-smooth">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

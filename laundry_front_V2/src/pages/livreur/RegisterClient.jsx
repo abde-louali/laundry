@@ -3,18 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  User,
-  Phone,
-  MapPin,
-  Navigation,
-  PlusCircle,
-  Locate,
-  Search,
-  UserPlus,
-  ChevronRight,
-  UserCheck,
-  Trash2,
-  Loader2
+  User, Phone, MapPin, Navigation, PlusCircle, Locate,
+  Search, UserPlus, ChevronRight, UserCheck, Trash2, CheckCircle2
 } from 'lucide-react';
 import { registerClient, searchClient } from '../../store/livreur/livreurThunk';
 import { selectLoading, selectSearchResult } from '../../store/livreur/livreurSelectors';
@@ -26,14 +16,14 @@ export default function RegisterClient() {
   const loading = useSelector(selectLoading);
   const searchResult = useSelector(selectSearchResult);
 
-  const [viewMode, setViewMode] = useState('search'); 
+  const [viewMode, setViewMode] = useState('search');
   const [phoneQuery, setPhoneQuery] = useState('');
-
   const [formData, setFormData] = useState({
     name: '',
     phones: [{ phoneNumber: '' }],
     addresses: [{ address: '', latitude: '', longitude: '', notes: '' }],
   });
+  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     if (viewMode === 'register' && phoneQuery && formData.phones[0].phoneNumber === '') {
@@ -41,21 +31,16 @@ export default function RegisterClient() {
       newPhones[0].phoneNumber = phoneQuery;
       setFormData(prev => ({ ...prev, phones: newPhones }));
     }
-  }, [viewMode, phoneQuery, formData.phones]);
-
-  const [isLocating, setIsLocating] = useState(false);
+  }, [viewMode]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!phoneQuery) return toast.warning("Entrez un numéro");
-
+    if (!phoneQuery) return toast.warning('Entrez un numéro');
     try {
       const result = await dispatch(searchClient(phoneQuery)).unwrap();
-      if (!result?.found) {
-        toast.info("Aucun client trouvé avec ce numéro.");
-      }
+      if (!result?.found) toast.info('Aucun client trouvé avec ce numéro.');
     } catch (err) {
-      toast.error(err || "Erreur de recherche");
+      toast.error(err || 'Erreur de recherche');
     }
   };
 
@@ -65,309 +50,262 @@ export default function RegisterClient() {
     navigate('/livreur/create-order');
   };
 
+  const handleSetCurrentLocation = (index) => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      toast.error('Géolocalisation non supportée'); setIsLocating(false); return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        updateAddressField(index, 'latitude', pos.coords.latitude.toString());
+        updateAddressField(index, 'longitude', pos.coords.longitude.toString());
+        setIsLocating(false);
+        toast.success('Position capturée !');
+      },
+      () => { toast.error('Erreur de géolocalisation'); setIsLocating(false); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const handleSubmitRegister = async (e) => {
     e.preventDefault();
-    if (!formData.name || formData.phones[0].phoneNumber === '' || formData.addresses[0].address === '') {
-      toast.error("Veuillez remplir les champs obligatoires");
-      return;
+    if (!formData.name || !formData.phones[0].phoneNumber || !formData.addresses[0].address) {
+      return toast.error('Veuillez remplir les champs obligatoires');
     }
-
     try {
       await dispatch(registerClient(formData)).unwrap();
-      toast.success("Client enregistré avec succès");
+      toast.success('Client enregistré avec succès');
       navigate('/livreur/create-order');
     } catch (err) {
       toast.error(err || "Erreur lors de l'enregistrement");
     }
   };
 
-  const addPhoneField = () => {
-    setFormData(prev => ({
-      ...prev,
-      phones: [...prev.phones, { phoneNumber: '' }]
-    }));
-  };
-
-  const removePhoneField = (index) => {
-    if (formData.phones.length > 1) {
-      const newPhones = formData.phones.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, phones: newPhones }));
-    }
-  };
-
-  const updatePhoneField = (index, value) => {
-    const newPhones = [...formData.phones];
-    newPhones[index].phoneNumber = value;
-    setFormData(prev => ({ ...prev, phones: newPhones }));
-  };
-
-  const addAddressField = () => {
-    setFormData(prev => ({
-      ...prev,
-      addresses: [...prev.addresses, { address: '', latitude: '', longitude: '', notes: '' }]
-    }));
-  };
-
-  const removeAddressField = (index) => {
-    if (formData.addresses.length > 1) {
-      const newAddresses = formData.addresses.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, addresses: newAddresses }));
-    }
-  };
-
-  const updateAddressField = (index, field, value) => {
-    const newAddresses = [...formData.addresses];
-    newAddresses[index][field] = value;
-    setFormData(prev => ({ ...prev, addresses: newAddresses }));
-  };
-
-  const handleSetCurrentLocation = (index) => {
-    setIsLocating(true);
-    if (!navigator.geolocation) {
-      toast.error("Géolocalisation non supportée");
-      setIsLocating(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        updateAddressField(index, 'latitude', position.coords.latitude.toString());
-        updateAddressField(index, 'longitude', position.coords.longitude.toString());
-        setIsLocating(false);
-        toast.success("Position capturée !");
-      },
-      (error) => {
-        toast.error("Erreur de géolocalisation");
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
+  const addPhoneField = () => setFormData(p => ({ ...p, phones: [...p.phones, { phoneNumber: '' }] }));
+  const removePhoneField = (i) => { if (formData.phones.length > 1) setFormData(p => ({ ...p, phones: p.phones.filter((_, idx) => idx !== i) })); };
+  const updatePhoneField = (i, val) => { const arr = [...formData.phones]; arr[i].phoneNumber = val; setFormData(p => ({ ...p, phones: arr })); };
+  const addAddressField = () => setFormData(p => ({ ...p, addresses: [...p.addresses, { address: '', latitude: '', longitude: '', notes: '' }] }));
+  const removeAddressField = (i) => { if (formData.addresses.length > 1) setFormData(p => ({ ...p, addresses: p.addresses.filter((_, idx) => idx !== i) })); };
+  const updateAddressField = (i, field, val) => { const arr = [...formData.addresses]; arr[i][field] = val; setFormData(p => ({ ...p, addresses: arr })); };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 animate-fade-in p-4 sm:p-6 pb-20">
-
-      {/* SELECTION HEADER */}
-      <div className="bg-laundry-background border border-laundry-border p-1.5 rounded-lg flex items-center mb-6">
-        <button
-          onClick={() => { setViewMode('search'); dispatch(clearSearchResult()); }}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-semibold transition-colors ${viewMode === 'search' ? 'bg-white text-laundry-primary shadow-sm border border-laundry-border' : 'text-laundry-text-secondary hover:text-laundry-text-primary'}`}
-        >
-          <Search size={16} /> Rechercher
-        </button>
-        <button
-          onClick={() => setViewMode('register')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-semibold transition-colors ${viewMode === 'register' ? 'bg-white text-laundry-primary shadow-sm border border-laundry-border' : 'text-laundry-text-secondary hover:text-laundry-text-primary'}`}
-        >
-          <UserPlus size={16} /> Nouveau
-        </button>
+    <div className="max-w-xl mx-auto pb-10">
+      {/* Tab Toggle */}
+      <div className="bg-gray-100 rounded-xl p-1 flex mb-6">
+        {[
+          { key: 'search', label: 'Rechercher', icon: Search },
+          { key: 'register', label: 'Nouveau Client', icon: UserPlus },
+        ].map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => { setViewMode(tab.key); if (tab.key === 'search') dispatch(clearSearchResult()); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                viewMode === tab.key ? 'bg-surface shadow-sm text-primary-600' : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              <Icon size={16} />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* VIEW: SEARCH MODE */}
+      {/* SEARCH MODE */}
       {viewMode === 'search' && (
-        <div className="space-y-6 animate-slide-up">
-          <div className="mb-2">
-            <h2 className="text-2xl font-bold text-laundry-text-primary">Rechercher un Client</h2>
-            <p className="text-sm font-medium text-laundry-text-secondary">Entrez son numéro de téléphone ou son nom</p>
+        <div className="space-y-5 animate-fade-in">
+          <div className="bg-surface rounded-2xl shadow-card p-5">
+            <h2 className="text-base font-semibold text-text-primary mb-1">Trouver un client</h2>
+            <p className="text-sm text-text-muted mb-4">Recherchez par numéro de téléphone</p>
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  type="tel"
+                  placeholder="06XXXXXXXX"
+                  value={phoneQuery}
+                  onChange={e => setPhoneQuery(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm bg-surface focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted min-h-[48px]"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading?.search}
+                className="bg-primary-600 hover:bg-primary-700 text-white rounded-xl px-5 text-sm font-medium flex items-center gap-2 transition-colors min-h-[48px]"
+              >
+                {loading?.search ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={16} />}
+                Rechercher
+              </button>
+            </form>
           </div>
 
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="relative">
-              <Phone size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-laundry-text-muted" />
-              <input
-                type="tel"
-                placeholder="06XXXXXXXX"
-                value={phoneQuery}
-                onChange={(e) => setPhoneQuery(e.target.value)}
-                className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md py-4 pl-12 pr-4 font-bold text-laundry-text-primary outline-none transition-all shadow-sm"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading?.search}
-              className="w-full bg-laundry-primary text-white py-3.5 rounded-md font-semibold text-sm shadow-sm hover:bg-laundry-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading?.search ? (
-                <Loader2 size={20} className="animate-spin" />
-              ) : (
-                <>
-                  <Search size={18} />
-                  Lancer la recherche
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* SEARCH RESULT CARD */}
+          {/* Search Result */}
           {searchResult && (
-            <div className="bg-white rounded-xl border border-laundry-border p-6 shadow-sm space-y-6 animate-zoom-in">
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 bg-laundry-primary/10 rounded-full flex items-center justify-center text-laundry-primary border border-laundry-primary/20 shrink-0">
-                  <UserCheck size={24} />
+            <div className="bg-surface rounded-2xl shadow-card p-5 animate-fade-in">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-lg flex-shrink-0">
+                  {searchResult.name?.[0]?.toUpperCase()}
                 </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-laundry-success uppercase tracking-wider bg-laundry-success-light px-2 py-0.5 rounded border border-laundry-success/20">Client Trouvé</span>
-                  <h3 className="text-xl font-bold text-laundry-text-primary">{searchResult.name}</h3>
-                  <div className="space-y-1 mt-2">
-                    {searchResult.phones?.map((p, i) => (
-                      <p key={i} className="text-xs font-semibold text-laundry-text-secondary flex items-center gap-1.5">
-                        <Phone size={12} className="text-laundry-text-muted" /> {p.phoneNumber}
-                      </p>
-                    ))}
-                    {searchResult.addresses?.map((a, i) => (
-                      <p key={i} className="text-xs font-semibold text-laundry-text-secondary flex items-start gap-1.5 line-clamp-2">
-                        <MapPin size={12} className="text-laundry-text-muted shrink-0 mt-0.5" /> {a.address}
-                      </p>
-                    ))}
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Client trouvé</span>
                   </div>
+                  <h3 className="font-semibold text-text-primary">{searchResult.name}</h3>
+                  {searchResult.phones?.map((p, i) => (
+                    <p key={i} className="text-sm text-text-muted flex items-center gap-1 mt-0.5"><Phone size={12} />{p.phoneNumber}</p>
+                  ))}
+                  {searchResult.addresses?.map((a, i) => (
+                    <p key={i} className="text-sm text-text-muted flex items-center gap-1 mt-0.5"><MapPin size={12} />{a.address}</p>
+                  ))}
                 </div>
               </div>
-
               <button
                 onClick={() => handleSelectExisting(searchResult)}
-                className="w-full bg-white border border-laundry-primary text-laundry-primary hover:bg-laundry-background py-3 rounded-md font-semibold text-sm flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors min-h-[48px]"
               >
-                <span>Sélectionner ce client</span>
-                <ChevronRight size={18} />
+                <CheckCircle2 size={16} />
+                Sélectionner ce client
+                <ChevronRight size={16} />
               </button>
             </div>
           )}
 
+          {/* No result + create CTA */}
           {!searchResult && !loading?.search && phoneQuery.length >= 8 && (
-            <div className="text-center p-8 border border-dashed border-laundry-border rounded-xl space-y-3 bg-laundry-background">
-              <UserPlus size={32} className="mx-auto text-laundry-text-muted opacity-50" />
-              <p className="text-sm font-semibold text-laundry-text-primary">Client introuvable</p>
+            <div className="bg-surface rounded-2xl shadow-card p-6 flex flex-col items-center text-center">
+              <UserPlus size={36} className="text-text-muted mb-3" />
+              <p className="text-sm text-text-muted mb-3">Aucun client trouvé avec ce numéro</p>
               <button
                 onClick={() => setViewMode('register')}
-                className="text-laundry-primary font-semibold text-sm hover:underline flex items-center justify-center mx-auto gap-1"
+                className="bg-primary-50 text-primary-600 border border-primary-200 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-primary-100 transition-colors"
               >
-                <PlusCircle size={14} /> Créer un nouveau profil
+                Créer un nouveau profil
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* VIEW: REGISTER MODE */}
+      {/* REGISTER MODE */}
       {viewMode === 'register' && (
-        <form onSubmit={handleSubmitRegister} className="space-y-6 animate-slide-up">
-          <div className="mb-2">
-            <h2 className="text-2xl font-bold text-laundry-text-primary">Nouveau Client</h2>
-            <p className="text-sm font-medium text-laundry-text-secondary">Enregistrez les informations pour la collecte</p>
-          </div>
+        <form onSubmit={handleSubmitRegister} className="space-y-4 animate-fade-in">
 
-          <div className="bg-white rounded-xl border border-laundry-border p-6 shadow-sm space-y-5">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-laundry-text-secondary">Nom Complet</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-laundry-text-muted" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Ex: Jean Dupont" 
-                  value={formData.name} 
-                  onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                  className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary p-2.5 pl-10 rounded-md text-sm font-semibold outline-none transition-all" 
-                />
-              </div>
-            </div>
-
-            {/* PHONES SECTION */}
-            <div className="space-y-3 pt-4 border-t border-laundry-border">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-laundry-text-secondary">Téléphones</label>
-                <button type="button" onClick={addPhoneField} className="text-laundry-primary text-xs font-semibold flex items-center gap-1 hover:underline">
-                  <PlusCircle size={14} /> Ajouter
-                </button>
-              </div>
-              {formData.phones.map((phone, index) => (
-                <div key={index} className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-laundry-text-muted" size={18} />
-                    <input 
-                        type="tel" 
-                        placeholder="06XXXXXXXX" 
-                        value={phone.phoneNumber} 
-                        onChange={e => updatePhoneField(index, e.target.value)} 
-                        className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary p-2.5 pl-10 rounded-md text-sm font-semibold outline-none transition-all" 
-                    />
-                  </div>
-                  {formData.phones.length > 1 && (
-                    <button type="button" onClick={() => removePhoneField(index)} className="p-2.5 bg-white border border-laundry-border text-laundry-error rounded-md hover:bg-laundry-error/5 transition-colors">
-                      <Trash2 size={18} />
-                    </button>
-                  )}
+          {/* Informations Card */}
+          <div className="bg-surface rounded-2xl shadow-card p-5">
+            <h3 className="text-sm font-semibold text-text-primary mb-4">Informations</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-text-primary mb-1.5 block">Nom complet *</label>
+                <div className="relative">
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <input
+                    type="text" placeholder="Ex: Ahmed Ben Ali"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm bg-surface focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted min-h-[48px]"
+                  />
                 </div>
-              ))}
-            </div>
-
-            {/* ADDRESSES SECTION */}
-            <div className="space-y-4 pt-4 border-t border-laundry-border">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-laundry-text-secondary">Adresses</label>
-                <button type="button" onClick={addAddressField} className="text-laundry-primary text-xs font-semibold flex items-center gap-1 hover:underline">
-                  <PlusCircle size={14} /> Ajouter
-                </button>
               </div>
-              
-              {formData.addresses.map((address, index) => (
-                <div key={index} className="bg-laundry-background p-4 rounded-lg space-y-4 border border-laundry-border relative">
-                  {formData.addresses.length > 1 && (
-                    <button type="button" onClick={() => removeAddressField(index)} className="absolute top-2 right-2 p-1.5 text-laundry-text-muted hover:text-laundry-error transition-colors bg-white rounded-md shadow-sm border border-laundry-border">
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                  
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-laundry-text-secondary uppercase">Adresse {index + 1}</label>
-                    <div className="relative">
-                      <Navigation className="absolute left-3 top-3 text-laundry-text-muted" size={16} />
-                      <textarea 
-                          rows="2" 
-                          placeholder="Quartier, Rue, Immeuble..." 
-                          value={address.address} 
-                          onChange={e => updateAddressField(index, 'address', e.target.value)} 
-                          className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary p-2.5 pl-10 rounded-md text-sm font-semibold outline-none transition-all resize-none shadow-sm" 
-                      />
-                    </div>
-                  </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-laundry-text-secondary uppercase">Notes (facultatif)</label>
-                    <input 
-                        type="text" 
-                        placeholder="Ex: 2ème étage, porte gauche" 
-                        value={address.notes} 
-                        onChange={e => updateAddressField(index, 'notes', e.target.value)} 
-                        className="w-full bg-white border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary p-2.5 rounded-md text-sm font-semibold outline-none transition-all shadow-sm" 
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSetCurrentLocation(index)}
-                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-xs transition-colors border ${address.latitude ? 'bg-green-50 text-green-600 border-green-200' : 'bg-white text-laundry-text-primary border-laundry-border hover:bg-laundry-background'}`}
-                  >
-                    <Locate size={14} />
-                    <span>{address.latitude ? 'Position GPS Capturée' : 'Détecter ma position GPS'}</span>
+              {/* Phones */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-text-primary">Téléphones *</label>
+                  <button type="button" onClick={addPhoneField} className="text-primary-600 text-xs flex items-center gap-1 hover:text-primary-700">
+                    <PlusCircle size={14} /> Ajouter
                   </button>
                 </div>
-              ))}
+                <div className="space-y-2">
+                  {formData.phones.map((phone, index) => (
+                    <div key={index} className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                        <input
+                          type="tel" placeholder="06XXXXXXXX"
+                          value={phone.phoneNumber}
+                          onChange={e => updatePhoneField(index, e.target.value)}
+                          className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted min-h-[48px]"
+                        />
+                      </div>
+                      {formData.phones.length > 1 && (
+                        <button type="button" onClick={() => removePhoneField(index)} className="w-11 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Address Cards */}
+          {formData.addresses.map((address, index) => (
+            <div key={index} className="bg-surface rounded-2xl shadow-card p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-text-primary">Adresse {index + 1}</h3>
+                {formData.addresses.length > 1 && (
+                  <button type="button" onClick={() => removeAddressField(index)} className="text-red-400 hover:text-red-500 text-xs flex items-center gap-1">
+                    <Trash2 size={14} /> Supprimer
+                  </button>
+                )}
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-1.5 block">Adresse *</label>
+                  <div className="relative">
+                    <Navigation size={16} className="absolute left-3 top-3.5 text-text-muted" />
+                    <textarea
+                      rows={2} placeholder="Quartier, Rue, Immeuble..."
+                      value={address.address}
+                      onChange={e => updateAddressField(index, 'address', e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm resize-none focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-1.5 block">Notes (facultatif)</label>
+                  <input
+                    type="text" placeholder="Ex: 2ème étage, porte gauche"
+                    value={address.notes}
+                    onChange={e => updateAddressField(index, 'notes', e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSetCurrentLocation(index)}
+                  disabled={isLocating}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border transition-colors min-h-[48px] ${
+                    address.latitude
+                      ? 'bg-green-50 text-green-600 border-green-200'
+                      : 'bg-primary-50 text-primary-600 border-primary-200 hover:bg-primary-100'
+                  }`}
+                >
+                  {isLocating ? <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Locate size={16} />}
+                  {address.latitude ? `GPS: ${parseFloat(address.latitude).toFixed(4)}, ${parseFloat(address.longitude).toFixed(4)}` : 'Capturer Position GPS'}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Add address */}
+          <button
+            type="button" onClick={addAddressField}
+            className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-text-muted hover:border-primary-300 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <PlusCircle size={16} />
+            Ajouter une adresse
+          </button>
 
           <button
             type="submit"
             disabled={loading?.registerClient}
-            className="w-full bg-laundry-primary text-white py-3.5 rounded-md font-bold text-sm shadow-sm hover:bg-laundry-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-3.5 text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm min-h-[48px]"
           >
-            {loading?.registerClient ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <>
-                <UserPlus size={18} />
-                Créer & Continuer
-              </>
-            )}
+            {loading?.registerClient ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <UserPlus size={16} />}
+            Créer Profil &amp; Continuer
           </button>
         </form>
       )}

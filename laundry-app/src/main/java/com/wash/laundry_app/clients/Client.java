@@ -26,6 +26,9 @@ public class Client {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "email")
+    private String email;
+
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ClientPhone> phones = new ArrayList<>();
 

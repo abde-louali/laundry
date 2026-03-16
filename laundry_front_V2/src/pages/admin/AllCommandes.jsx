@@ -1,161 +1,325 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import {
-    ClipboardList, Search, Loader2, ChevronRight,
-    Clock, CheckCircle2, Wrench, PackageCheck, Truck, CreditCard, XCircle, DollarSign
+import { 
+  ClipboardList, Search, Loader2, Download, 
+  Filter, Calendar, X, RefreshCw, FileText,
+  Clock, Users
 } from 'lucide-react';
-import { fetchAllCommandes } from '../../store/admin/adminThunk';
+import { fetchAllCommandes, downloadCommandesCsv } from '../../store/admin/adminThunk';
+import { selectAllCommandes, selectAdminLoading } from '../../store/admin/adminSelectors';
+import { StatusBadge } from '../../components/StatusBadge';
+import { toast } from 'react-toastify';
 
-const STATUS_LIST = ['all', 'en_attente', 'validee', 'en_traitement', 'prete', 'livree', 'payee', 'annulee'];
-
-const STATUS_CONFIG = {
-    all: { label: 'Toutes', bg: 'bg-laundry-background', text: 'text-laundry-text-primary', border: 'border-laundry-border', dot: 'bg-laundry-text-muted', Icon: ClipboardList },
-    en_attente: { label: 'En Attente', bg: 'bg-laundry-warning-light', text: 'text-laundry-warning', border: 'border-laundry-warning/20', dot: 'bg-laundry-warning', Icon: Clock },
-    validee: { label: 'Validée', bg: 'bg-blue-50', text: 'text-laundry-primary-light', border: 'border-laundry-primary-light/20', dot: 'bg-laundry-primary-light', Icon: CheckCircle2 },
-    en_traitement: { label: 'En Traitement', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200', dot: 'bg-purple-500', Icon: Wrench },
-    prete: { label: 'Prête', bg: 'bg-laundry-success-light', text: 'text-laundry-success', border: 'border-laundry-success/20', dot: 'bg-laundry-success', Icon: PackageCheck },
-    livree: { label: 'Livrée', bg: 'bg-cyan-50', text: 'text-laundry-accent', border: 'border-laundry-accent/20', dot: 'bg-laundry-accent', Icon: Truck },
-    payee: { label: 'Payée', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-600', Icon: CreditCard },
-    annulee: { label: 'Annulée', bg: 'bg-laundry-error-light', text: 'text-laundry-error', border: 'border-laundry-error/20', dot: 'bg-laundry-error', Icon: XCircle },
-};
-
-const StatusBadge = ({ status }) => {
-    const cfg = STATUS_CONFIG[status] || { label: status, bg: 'bg-laundry-background', text: 'text-laundry-text-secondary', dot: 'bg-laundry-border' };
-    return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded inline-block text-[10px] font-semibold uppercase tracking-wider border border-transparent ${cfg.bg} ${cfg.text}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
-            {cfg.label}
-        </span>
-    );
-};
+const STATUS_LIST = [
+  { value: 'all', label: 'Toutes' },
+  { value: 'en_attente', label: 'En attente' },
+  { value: 'validee', label: 'Validée' },
+  { value: 'en_traitement', label: 'Traitement' },
+  { value: 'prete', label: 'Prête' },
+  { value: 'livree', label: 'Livrée' },
+  { value: 'payee', label: 'Payée' },
+  { value: 'annulee', label: 'Annulée' }
+];
 
 export default function AllCommandes() {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const { commandes, loading } = useSelector(s => s.admin);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const commandes = useSelector(selectAllCommandes);
+  const loading = useSelector(selectAdminLoading);
 
-    const [activeFilter, setActiveFilter] = useState('all');
-    const [search, setSearch] = useState('');
+  // Filters State
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
-    useEffect(() => { dispatch(fetchAllCommandes()); }, [dispatch]);
+  const loadData = useCallback(() => {
+    const params = {
+      search: search || undefined,
+      status: status !== 'all' ? status : undefined,
+      dateDebut: dateDebut || undefined,
+      dateFin: dateFin || undefined
+    };
+    dispatch(fetchAllCommandes(params));
+  }, [dispatch, search, status, dateDebut, dateFin]);
 
-    const filtered = commandes.filter(c => {
-        const matchStatus = activeFilter === 'all' || c.status === activeFilter;
-        const matchSearch = c.numeroCommande?.toLowerCase().includes(search.toLowerCase());
-        return matchStatus && matchSearch;
-    });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadData();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [loadData]);
 
-    return (
-        <div className="space-y-6 animate-fade-in p-4 sm:p-6 lg:p-8">
+  const handleExportCSV = async () => {
+    try {
+      await dispatch(downloadCommandesCsv()).unwrap();
+      toast.success('Exportation réussie');
+    } catch (err) {
+      toast.error('Erreur lors de l’exportation');
+    }
+  };
 
-            {/* HEADER */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
-                <div>
-                    <h1 className="text-2xl font-bold text-laundry-primary">
-                        Toutes les Commandes
-                    </h1>
-                    <p className="text-sm text-laundry-text-muted mt-1">
-                        Gérez et suivez l'ensemble de vos commandes ({commandes.length} au total)
-                    </p>
-                </div>
-            </div>
+  const clearFilters = () => {
+    setSearch('');
+    setStatus('all');
+    setDateDebut('');
+    setDateFin('');
+  };
 
-            {/* ACTIONS BAR (Search & Filters) */}
-            <div className="bg-white p-4 rounded-xl shadow-card border border-laundry-border flex flex-col gap-4">
-                <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-laundry-text-muted" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Rechercher par numéro de commande..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="w-full bg-laundry-background border border-laundry-border focus:border-laundry-primary focus:ring-1 focus:ring-laundry-primary rounded-md py-2 pl-9 pr-4 text-sm outline-none transition-all shadow-sm"
-                    />
-                </div>
+  // KPI Calculations (on the current local list for speed, or could be from backend)
+  const totalAmount = Array.isArray(commandes) ? commandes.reduce((acc, c) => acc + (c.montantTotal || 0), 0) : 0;
+  const pendingCount = Array.isArray(commandes) ? commandes.filter(c => c.status === 'en_attente').length : 0;
 
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    {STATUS_LIST.map(s => {
-                        const cfg = STATUS_CONFIG[s];
-                        const count = s === 'all' ? commandes.length : commandes.filter(c => c.status === s).length;
-                        if (count === 0 && s !== 'all') return null;
-                        
-                        const isActive = activeFilter === s;
-                        
-                        return (
-                            <button
-                                key={s}
-                                onClick={() => setActiveFilter(s)}
-                                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-all border ${
-                                    isActive 
-                                    ? `bg-white border-laundry-primary text-laundry-primary shadow-sm` 
-                                    : `bg-laundry-background border-transparent text-laundry-text-secondary hover:bg-white hover:border-laundry-border`
-                                }`}
-                            >
-                                {s !== 'all' && <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>}
-                                {cfg.label} <span className="text-laundry-text-muted ml-0.5">({count})</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* COMMANDES TABLE/GRID */}
-            {loading && filtered.length === 0 ? (
-                <div className="flex justify-center py-20 bg-white rounded-xl border border-laundry-border shadow-sm">
-                    <Loader2 size={32} className="animate-spin text-laundry-primary" />
-                </div>
-            ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-laundry-border shadow-sm text-center">
-                    <ClipboardList size={40} className="text-laundry-text-muted opacity-50 mb-4" />
-                    <p className="text-sm font-semibold text-laundry-text-secondary">Aucune commande trouvée</p>
-                </div>
-            ) : (
-                <div className="bg-white rounded-xl shadow-card border border-laundry-border overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-laundry-background border-b border-laundry-border">
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">N° Commande</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Statut</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider">Prix Total</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-laundry-text-secondary uppercase tracking-wider text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-laundry-border">
-                                {filtered.map(c => (
-                                    <tr 
-                                        key={c.id} 
-                                        onClick={() => navigate(`/admin/commandes/${c.id}`)}
-                                        className="hover:bg-laundry-background/50 cursor-pointer transition-colors group"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-laundry-text-primary group-hover:text-laundry-primary transition-colors">#{c.numeroCommande}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <StatusBadge status={c.status} />
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {c.montantTotal != null ? (
-                                                <span className="text-sm font-semibold text-laundry-text-primary">{c.montantTotal} DH</span>
-                                            ) : (
-                                                <span className="text-sm font-medium text-laundry-text-muted">—</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button className="text-laundry-text-muted group-hover:text-laundry-primary transition-colors p-1">
-                                                <ChevronRight size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+  return (
+    <div className="space-y-6 pb-12 animate-fade-in">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">Gestion des Commandes</h1>
+          <p className="text-sm text-text-muted font-medium">Consultez et gérez l'ensemble des transactions.</p>
         </div>
-    );
+        <button 
+          onClick={handleExportCSV}
+          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-700 transition-all active:scale-95"
+        >
+          <Download size={18} />
+          <span>Exporter CSV</span>
+        </button>
+      </div>
+
+      {/* MINI KPI ROW */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
+            <ClipboardList size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total</p>
+            <p className="text-lg font-black text-text-primary">{commandes?.length || 0}</p>
+          </div>
+        </div>
+        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+            <RefreshCw size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Revenus</p>
+            <p className="text-lg font-black text-text-primary">{totalAmount.toLocaleString()} DH</p>
+          </div>
+        </div>
+        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+            <Clock size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">En Attente</p>
+            <p className="text-lg font-black text-text-primary">{pendingCount}</p>
+          </div>
+        </div>
+        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
+            <Download size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Articles</p>
+            <p className="text-lg font-black text-text-primary">
+              {commandes?.reduce((acc, c) => acc + (c.commandeItems?.length || 0), 0) || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* FILTERS SECTION */}
+      <div className="bg-surface rounded-2xl border border-border/50 shadow-card overflow-hidden">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input 
+              type="text" 
+              placeholder="Rechercher par numéro, client..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-background border-none rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 outline-none placeholder:text-text-muted"
+            />
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${showFilters ? 'bg-primary-50 text-primary-600' : 'bg-background text-text-secondary hover:bg-border/50'}`}
+            >
+              <Filter size={18} />
+              <span>Filtres</span>
+              {(status !== 'all' || dateDebut || dateFin) && <div className="w-2 h-2 rounded-full bg-primary-500" />}
+            </button>
+            <button 
+              onClick={loadData}
+              disabled={loading}
+              className="px-4 py-2.5 bg-background text-text-secondary rounded-xl hover:bg-border/50 transition-all disabled:opacity-50"
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </div>
+
+        {/* EXPANDABLE FILTERS */}
+        {showFilters && (
+          <div className="p-6 bg-background/30 border-b border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-down">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Statut</label>
+              <select 
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-primary-500"
+              >
+                {STATUS_LIST.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Date Début</label>
+              <div className="relative">
+                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input 
+                  type="date" 
+                  value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)}
+                  className="w-full bg-surface border border-border rounded-xl pl-9 pr-3 py-2 text-sm font-medium outline-none focus:border-primary-500"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Date Fin</label>
+              <div className="relative">
+                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input 
+                  type="date" 
+                  value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)}
+                  className="w-full bg-surface border border-border rounded-xl pl-9 pr-3 py-2 text-sm font-medium outline-none focus:border-primary-500"
+                />
+              </div>
+            </div>
+            <div className="flex items-end gap-2">
+              <button 
+                onClick={clearFilters}
+                className="flex-1 bg-surface border border-border text-text-secondary px-4 py-2 rounded-xl text-sm font-bold hover:bg-white transition-all flex items-center justify-center gap-2"
+              >
+                <X size={16} />
+                Réinitialiser
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* TABLE VIEW */}
+        <div className="overflow-x-auto min-h-[400px]">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-background">
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Référence</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Client</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Date / Heure</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Articles</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Montant</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Statut</th>
+                <th className="px-6 py-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border relative">
+              {loading && Array.isArray(commandes) && commandes.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-24 text-center">
+                    <Loader2 size={40} className="animate-spin text-primary-200 mx-auto mb-4" />
+                    <p className="text-text-muted font-medium">Chargement des données...</p>
+                  </td>
+                </tr>
+              ) : Array.isArray(commandes) && commandes.length > 0 ? (
+                commandes.map((c) => (
+                  <tr 
+                    key={c.id} 
+                    onClick={() => navigate(`/admin/commandes/${c.id}`)}
+                    className="group hover:bg-primary-50/30 transition-all cursor-pointer"
+                  >
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-background border border-border group-hover:border-primary-200 flex items-center justify-center text-primary-600 transition-colors">
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-text-primary group-hover:text-primary-600 transition-colors">#{c.numeroCommande}</p>
+                          <p className="text-[10px] text-text-muted mt-0.5 uppercase font-bold tracking-tighter">ID: {c.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold">
+                            {c.client?.nom?.[0]?.toUpperCase() || 'C'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-text-primary">{c.client?.nom || 'Inconnu'}</p>
+                          <p className="text-[10px] text-text-muted font-medium">{c.client?.telephone || 'No phone'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <p className="text-sm font-semibold text-text-primary">
+                        {new Date(c.dateCreation).toLocaleDateString('fr-FR')}
+                      </p>
+                      <p className="text-[10px] text-text-muted font-medium mt-0.5">
+                        {new Date(c.dateCreation).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span className="inline-flex items-center justify-center px-2 py-1 rounded-lg bg-background border border-border text-[10px] font-black text-text-secondary">
+                        {c.commandeItems?.length || 0}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <p className="text-sm font-black text-text-primary">{c.montantTotal?.toLocaleString()} DH</p>
+                      <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider mt-0.5">{c.modePaiement || 'Espèces'}</p>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex justify-center">
+                        <StatusBadge status={c.status} />
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex items-center justify-end">
+                        <div className="p-2 rounded-lg bg-background text-text-muted group-hover:bg-primary-600 group-hover:text-white transition-all">
+                           <RefreshCw size={14} />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                   <td colSpan="7" className="py-24 text-center">
+                    <ClipboardList size={48} className="text-text-muted/20 mx-auto mb-4" />
+                    <p className="text-text-primary font-bold">Aucune commande trouvée</p>
+                    <p className="text-sm text-text-muted mt-1">Essayez de modifier vos filtres ou de rafraîchir la page.</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* PAGINATION / FOOTER INFO */}
+        <div className="p-4 bg-background/50 border-t border-border flex items-center justify-between">
+          <p className="text-xs text-text-muted font-medium">
+            Affichage de <span className="text-text-primary font-bold">{commandes?.length || 0}</span> résultats
+          </p>
+          <div className="flex gap-2">
+             <button disabled className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold opacity-50">Précédent</button>
+             <button disabled className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold opacity-50">Suivant</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
+

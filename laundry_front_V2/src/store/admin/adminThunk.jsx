@@ -12,6 +12,8 @@ import {
     getCommandeById,
     getAllClients,
     getClientCommandes,
+    exportCommandesCsv,
+    getClientStatistics,
 } from "./adminService";
 
 
@@ -116,10 +118,29 @@ export const removeUser = createAsyncThunk(
 
 export const fetchAllCommandes = createAsyncThunk(
     'admin/fetchAllCommandes',
+    async (params, { rejectWithValue }) => {
+        try {
+            const res = await getAllCommandes(params);
+            return res.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+export const downloadCommandesCsv = createAsyncThunk(
+    'admin/downloadCommandesCsv',
     async (_, { rejectWithValue }) => {
         try {
-            const res = await getAllCommandes();
-            return res.data;
+            const res = await exportCommandesCsv();
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'commandes.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            return true;
         } catch (error) {
             return rejectWithValue(error.response?.data || error.message);
         }
@@ -142,9 +163,21 @@ export const fetchCommandeById = createAsyncThunk(
 
 export const fetchAllClients = createAsyncThunk(
     'admin/fetchAllClients',
+    async (params, { rejectWithValue }) => {
+        try {
+            const res = await getAllClients(params);
+            return res.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+export const fetchClientStatistics = createAsyncThunk(
+    'admin/fetchClientStatistics',
     async (_, { rejectWithValue }) => {
         try {
-            const res = await getAllClients();
+            const res = await getClientStatistics();
             return res.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || error.message);
