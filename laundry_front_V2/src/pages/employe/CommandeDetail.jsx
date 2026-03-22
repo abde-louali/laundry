@@ -65,7 +65,7 @@ export default function CommandeDetail() {
     const nextStatus = NEXT_COMMANDE_STATUS[commande.status];
     if (!nextStatus) return;
     try {
-      await dispatch(updateCommandeStatus({ commandeId: commande.id, newStatus: nextStatus })).unwrap();
+      await dispatch(updateCommandeStatus({ id: commande.id, newStatus: nextStatus })).unwrap();
       toast.success('Statut mis à jour !');
     } catch (err) {
       toast.error(err || 'Erreur lors de la mise à jour');
@@ -89,7 +89,7 @@ export default function CommandeDetail() {
     try {
       const uploadedUrls = await dispatch(uploadEmployeImages(Array.from(files))).unwrap();
       const imageUrls = uploadedUrls.map(r => r.imageUrl);
-      await dispatch(addTapisImages({ commandeTapisId, imageUrls, imageType })).unwrap();
+      await dispatch(addTapisImages({ tapisId: commandeTapisId, imageUrls, type: imageType })).unwrap();
       await dispatch(fetchCommandeById(id));
       toast.success('Images ajoutées');
     } catch (err) {
@@ -245,41 +245,60 @@ export default function CommandeDetail() {
 
         {/* RIGHT — Progress + Info */}
         <div className="space-y-4 mt-4 lg:mt-0">
-          {/* Circular Progress */}
-          <div className="bg-surface rounded-2xl shadow-card p-5">
-            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Avancement</h3>
-            <div className="flex justify-center mb-3">
-              <svg viewBox="0 0 120 120" width="120" height="120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#F1F3F8" strokeWidth="8" />
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#4F46E5" strokeWidth="8"
-                  strokeLinecap="round" strokeDasharray={`${strokeDash} ${circumference}`}
-                  strokeDashoffset={circumference / 4}
-                  transform="rotate(-90 60 60)" />
-                <text x="60" y="64" textAnchor="middle" fontSize="20" fontWeight="700" fill="#0F172A">{progressPct}%</text>
-              </svg>
+        {/* Circular Progress */}
+        <div className="bg-surface rounded-3xl shadow-md p-6 border border-border/40">
+          <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] mb-6 text-center">Avancement du Traitement</h3>
+          <div className="flex justify-center mb-4 relative">
+            <svg viewBox="0 0 120 120" className="w-32 h-32 md:w-40 md:h-40 rotate-[-90deg]">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#F1F3F8" strokeWidth="10" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#4F46E5" strokeWidth="10"
+                strokeLinecap="round" strokeDasharray={`${strokeDash} ${circumference}`}
+                className="transition-all duration-1000 ease-out" />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+               <span className="text-3xl font-black text-text-primary tracking-tighter">{progressPct}%</span>
+               <span className="text-[8px] font-black text-text-muted uppercase tracking-widest">Complété</span>
             </div>
-            <p className="text-sm text-text-muted text-center">{completedTapis} sur {totalTapis} tapis terminés</p>
           </div>
+          <p className="text-[10px] font-black text-text-muted text-center uppercase tracking-widest">
+             {completedTapis} / {totalTapis} articles terminés
+          </p>
+        </div>
 
-          {/* Info Card */}
-          <div className="bg-surface rounded-2xl shadow-card p-5 space-y-3">
-            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">Informations</h3>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-text-muted mb-1">Livreur Assigné</p>
-              <p className="text-sm font-medium text-text-primary flex items-center gap-1.5">
-                <User size={14} className="text-text-muted" />
-                {commande.livreur?.name || 'Non assigné'}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-text-muted mb-1">Mode Paiement</p>
-              <p className="text-sm font-medium text-text-primary">{commande.modePaiement || 'Non défini'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-text-muted mb-1">Montant Total</p>
-              <p className="text-sm font-bold text-primary-600">{commande.montantTotal} DH</p>
-            </div>
+        {/* Info Card */}
+        <div className="bg-surface rounded-3xl shadow-md p-6 border border-border/40 space-y-4">
+          <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Détails Logistique</h3>
+          <div className="grid grid-cols-1 gap-3">
+             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+               <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5">Livreur en charge</p>
+               <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary-500 shadow-sm border border-primary-100">
+                     <User size={14} />
+                  </div>
+                  <p className="text-sm font-black text-text-primary uppercase tracking-tight">
+                    {commande.livreur?.name || 'Non assigné'}
+                  </p>
+               </div>
+             </div>
+             
+             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+               <p className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5">Mode Règlement</p>
+               <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary-500 shadow-sm border border-primary-100">
+                     <Receipt size={14} />
+                  </div>
+                  <p className="text-sm font-black text-text-primary uppercase tracking-tight">
+                    {commande.modePaiement || 'Non défini'}
+                  </p>
+               </div>
+             </div>
+
+             <div className="bg-primary-500 rounded-2xl p-4 shadow-lg shadow-primary-500/20">
+               <p className="text-[9px] font-black text-white/70 uppercase tracking-widest mb-1">Montant Total</p>
+               <p className="text-2xl font-black text-white tracking-tighter">{commande.montantTotal} <span className="text-sm">DH</span></p>
+             </div>
           </div>
+        </div>
         </div>
       </div>
 

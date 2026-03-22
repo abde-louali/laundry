@@ -39,6 +39,20 @@ public class HistoriqueStatut {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    // Explicit Getters/Setters to bypass Lombok failures
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Commande getCommande() { return commande; }
+    public void setCommande(Commande commande) { this.commande = commande; }
+    public String getAncienStatut() { return ancienStatut; }
+    public void setAncienStatut(String ancienStatut) { this.ancienStatut = ancienStatut; }
+    public String getNouveauStatut() { return nouveauStatut; }
+    public void setNouveauStatut(String nouveauStatut) { this.nouveauStatut = nouveauStatut; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public String getCommentaire() { return commentaire; }
+    public void setCommentaire(String commentaire) { this.commentaire = commentaire; }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

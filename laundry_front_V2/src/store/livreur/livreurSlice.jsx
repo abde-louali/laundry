@@ -11,7 +11,11 @@ import {
   fetchCanceledDeliveries,
   returnToWorkplace,
   fetchPreteCount,
-  fetchReadyOrders
+  fetchReadyOrders,
+  fetchLivreurDashboardStats,
+  confirmPayment,
+  fetchPaymentTypes,
+  fetchCarpetTypes
 } from './livreurThunk'
 
 export const COMMANDE_STATUS = {
@@ -36,7 +40,15 @@ const initialState = {
   canceledDeliveries: [],
   currentOrder: null,
   preteCount: 0,
-  seenNotificationIds: JSON.parse(localStorage.getItem('seen_notifications') || '[]'), // Track IDs that the user has already "viewed" in the dropdown
+  dashboardStats: {
+    commandesPretesCount: 0,
+    commandesARecupererCount: 0,
+    commandesAnnuleesCount: 0,
+    missionsCount: 0
+  },
+  carpetTypes: [],
+  paymentTypes: [],
+  seenNotificationIds: JSON.parse(localStorage.getItem('seen_notifications') || '[]'), 
 
   // Loading states
   loading: {
@@ -49,7 +61,9 @@ const initialState = {
     canceledDeliveries: false,
     payment: false,
     action: false,
-    preteCount: false
+    preteCount: false,
+    dashboardStats: false,
+    paymentTypes: false
   },
 
   // Error states
@@ -62,7 +76,9 @@ const initialState = {
     readyForDelivery: null,
     canceledDeliveries: null,
     payment: null,
-    action: null
+    action: null,
+    dashboardStats: null,
+    paymentTypes: null
   },
 
   // Success flags
@@ -312,6 +328,70 @@ const livreurSlice = createSlice({
         state.loading.readyForDelivery = false
         state.error.readyForDelivery = action.payload
       })
+
+    // ========== FETCH DASHBOARD STATS ==========
+    builder
+      .addCase(fetchLivreurDashboardStats.pending, (state) => {
+        state.loading.dashboardStats = true;
+        state.error.dashboardStats = null;
+      })
+      .addCase(fetchLivreurDashboardStats.fulfilled, (state, action) => {
+        state.loading.dashboardStats = false;
+        state.dashboardStats = action.payload;
+      })
+      .addCase(fetchLivreurDashboardStats.rejected, (state, action) => {
+        state.loading.dashboardStats = false;
+        state.error.dashboardStats = action.payload;
+      });
+
+    // ========== CONFIRM PAYMENT (Alias) ==========
+    builder
+      .addCase(confirmPayment.pending, (state) => {
+        state.loading.payment = true;
+        state.error.payment = null;
+        state.paymentRecorded = false;
+      })
+      .addCase(confirmPayment.fulfilled, (state, action) => {
+        state.loading.payment = false;
+        state.currentOrder = action.payload;
+        state.paymentRecorded = true;
+        state.readyForDelivery = state.readyForDelivery.filter(
+          order => order.id !== action.payload.id
+        );
+      })
+      .addCase(confirmPayment.rejected, (state, action) => {
+        state.loading.payment = false;
+        state.error.payment = action.payload;
+        state.paymentRecorded = false;
+      });
+
+    // ========== FETCH PAYMENT TYPES ==========
+    builder
+      .addCase(fetchPaymentTypes.pending, (state) => {
+        state.loading.paymentTypes = true;
+        state.error.paymentTypes = null;
+      })
+      .addCase(fetchPaymentTypes.fulfilled, (state, action) => {
+        state.loading.paymentTypes = false;
+        state.paymentTypes = action.payload;
+      })
+      .addCase(fetchPaymentTypes.rejected, (state, action) => {
+        state.loading.paymentTypes = false;
+        state.error.paymentTypes = action.payload;
+      });
+
+    // ========== FETCH CARPET TYPES ==========
+    builder
+      .addCase(fetchCarpetTypes.pending, (state) => {
+        state.loading.carpetTypes = true;
+      })
+      .addCase(fetchCarpetTypes.fulfilled, (state, action) => {
+        state.loading.carpetTypes = false;
+        state.carpetTypes = action.payload;
+      })
+      .addCase(fetchCarpetTypes.rejected, (state, action) => {
+        state.loading.carpetTypes = false;
+      });
   }
 })
 

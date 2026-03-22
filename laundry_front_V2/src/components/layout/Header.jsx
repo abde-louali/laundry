@@ -1,9 +1,10 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, Bell, Search, Menu, Package } from 'lucide-react';
+import { LogIn, Bell, Search, Menu, Package, MoreVertical, LogOut } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { selectCurrentUser } from '../../store/auth/authSelector';
+import { logoutThunk } from '../../store/auth/authThunk';
 import { fetchPreteCount, fetchReadyOrders } from '../../store/livreur/livreurThunk';
 import { selectPreteCount, selectReadyOrders, selectSeenNotificationIds } from '../../store/livreur/livreurSelectors';
 import { markNotificationsAsSeen } from '../../store/livreur/livreurSlice';
@@ -32,6 +33,8 @@ const Header = () => {
   const navigate = useNavigate();
   const dropdownRef = React.useRef(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const mobileMenuRef = React.useRef(null);
 
   // Unified Notification Data & Daily Cleanup
   const notifications = React.useMemo(() => {
@@ -51,6 +54,9 @@ const Header = () => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsNotificationsOpen(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setIsMobileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -101,7 +107,7 @@ const Header = () => {
       const toastConfig = isLivreur ? {
         title: '📦 Nouvelle commande prête !',
         body: `Commande #${order.numeroCommande} est disponible.`,
-        path: '/livreur/ready-for-delivery'
+        path: '/livreur/delivery'
       } : {
         title: '📦 Nouvelle commande !',
         body: `Commande #${order.numeroCommande} créée par ${order.livreur?.name || 'un livreur'}.`,
@@ -126,11 +132,11 @@ const Header = () => {
     if (path.includes('/admin/users-management'))  return 'Gestion Utilisateurs';
     if (path.includes('/admin/commandes'))         return 'Commandes';
     if (path.includes('/admin/clients'))           return 'Clients';
-    if (path.includes('/livreur/dashboard'))       return 'Tableau de Bord';
-    if (path.includes('/livreur/register-client')) return 'Gestion Clients';
-    if (path.includes('/livreur/create-order'))    return 'Nouvelle Collecte';
-    if (path.includes('/livreur/ready-for-delivery')) return 'Livraisons Prêtes';
-    if (path.includes('/livreur/canceled-deliveries')) return 'Commandes Annulées';
+    if (path === '/livreur')                      return 'Tableau de Bord';
+    if (path.includes('/livreur/clients'))         return 'Gestion Clients';
+    if (path.includes('/livreur/orders'))          return 'Nouvelle Collecte';
+    if (path.includes('/livreur/delivery'))        return 'Livraisons Prêtes';
+    if (path.includes('/livreur/canceled'))        return 'Commandes Annulées';
     if (path.includes('/employe/dashboard'))       return 'Atelier de Traitement';
     if (path.includes('/employe/commandes'))       return 'Détail Commande';
     if (path.includes('/employe/retours'))         return 'Retours Atelier';
@@ -139,18 +145,40 @@ const Header = () => {
 
   const initials = user?.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?';
 
+  const handleLogout = async () => {
+    await dispatch(logoutThunk());
+    navigate("/");
+  };
+
   return (
     <header className="fixed top-0 right-0 left-0 md:left-16 lg:left-60 h-16 bg-surface shadow-topbar px-4 md:px-8 flex items-center justify-between z-30 transition-all duration-300">
       
-      {/* LEFT: Greeting (Desktop) / Page title (Mobile) */}
-      <div className="flex flex-col">
-        <h1 className="text-sm md:text-base font-bold text-text-primary flex items-center gap-2">
-          <span className="hidden md:inline">Bonjour,</span> {user?.name || 'Administrateur'} 
-          <span className="hidden md:inline text-xl">👋</span>
-        </h1>
-        <p className="text-[10px] md:text-xs text-text-muted hidden md:block">
-          Heureux de vous revoir, voici l'activité du jour.
-        </p>
+      {/* LEFT: Greeting / Title */}
+      <div className="flex flex-col min-w-0 flex-1 mr-2">
+        {isAdmin ? (
+          <>
+            <h1 className="text-sm md:text-base font-bold text-text-primary flex items-center gap-2 truncate">
+              <span className="hidden md:inline">Bonjour,</span> {user?.name || 'Administrateur'} 
+              <span className="hidden md:inline text-xl">👋</span>
+            </h1>
+            <p className="text-[10px] md:text-xs text-text-muted hidden md:block">
+              Heureux de vous revoir, voici l'activité du jour.
+            </p>
+          </>
+        ) : isLivreur ? (
+          <>
+            <h1 className="text-sm md:text-base font-bold text-text-primary truncate">
+              Tableau de bord Livreur
+            </h1>
+            <p className="text-[10px] md:text-xs text-text-muted hidden lg:block">
+              Gérez vos courses et collectes du jour
+            </p>
+          </>
+        ) : (
+          <h1 className="text-sm md:text-base font-bold text-text-primary truncate">
+            {getPageTitle()}
+          </h1>
+        )}
       </div>
 
       {/* CENTER: Search Bar (Desktop) */}
@@ -159,7 +187,7 @@ const Header = () => {
           <Search size={18} className="text-text-muted group-focus-within:text-primary-500 transition-colors" />
           <input
             type="text"
-            placeholder="Rechercher une commande, un client..."
+            placeholder={isLivreur ? "Chercher une mission..." : "Rechercher une commande, un client..."}
             className="bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-muted w-full"
           />
           <div className="flex items-center gap-1 bg-surface border border-border px-1.5 py-0.5 rounded-md text-[10px] text-text-muted font-bold shadow-sm">
@@ -222,7 +250,7 @@ const Header = () => {
                       <div
                         key={order.id}
                         onClick={() => {
-                          const target = isLivreur ? '/livreur/ready-for-delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
+                          const target = isLivreur ? '/livreur/delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
                           navigate(target);
                           setIsNotificationsOpen(false);
                         }}
@@ -269,7 +297,7 @@ const Header = () => {
                 <div className="px-5 py-3 border-t border-border bg-background/50 text-center">
                   <button
                     onClick={() => {
-                      const target = isLivreur ? '/livreur/ready-for-delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
+                      const target = isLivreur ? '/livreur/delivery' : (isAdmin ? '/admin/dashboard' : '/employe/dashboard');
                       navigate(target);
                       setIsNotificationsOpen(false);
                     }}
@@ -299,7 +327,7 @@ const Header = () => {
                 {user.name}
               </span>
               <span className="text-[10px] font-medium text-text-muted capitalize">
-                {user.role}
+                {isLivreur ? `ID: #${user.id || '---'}` : user.role}
               </span>
             </div>
             <div className="w-10 h-10 rounded-full border-2 border-primary-100 p-0.5 cursor-pointer hover:border-primary-300 transition-colors">
@@ -307,6 +335,39 @@ const Header = () => {
                 {initials}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* MOBILE MENU (3 dots) */}
+        {user && (
+          <div className="md:hidden relative" ref={mobileMenuRef}>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${
+                isMobileMenuOpen ? 'bg-primary-50 text-primary-600' : 'text-text-muted hover:bg-gray-100'
+              }`}
+            >
+              <MoreVertical size={20} />
+            </button>
+
+            {isMobileMenuOpen && (
+              <div className="absolute top-12 right-0 w-56 bg-white rounded-2xl shadow-modal border border-border overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
+                <div className="px-5 py-4 border-b border-border bg-gray-50/50">
+                  <p className="text-sm font-black text-text-primary truncate">{user.name}</p>
+                  <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-0.5 capitalize">{user.role}</p>
+                </div>
+                
+                <div className="p-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  >
+                    <LogOut size={18} />
+                    <span>Se déconnecter</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

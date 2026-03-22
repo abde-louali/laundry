@@ -68,6 +68,19 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     // Find commandes by livreur and date range
     List<Commande> findByLivreurIdAndDateCreationBetween(Long livreurId, LocalDateTime start, LocalDateTime end);
 
-
+    @Query("SELECT c FROM Commande c WHERE " +
+            "(:status IS NULL OR c.status = :status) AND " +
+            "(:dateDebut IS NULL OR c.dateCreation >= :dateDebut) AND " +
+            "(:dateFin IS NULL OR c.dateCreation <= :dateFin) AND " +
+            "(:search IS NULL OR LOWER(c.numeroCommande) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(c.client.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+    List<Commande> findFiltered(
+            @Param("status") CommandeStatus status,
+            @Param("dateDebut") LocalDateTime dateDebut,
+            @Param("dateFin") LocalDateTime dateFin,
+            @Param("search") String search,
+            org.springframework.data.domain.Sort sort
+    );
 }
+
 

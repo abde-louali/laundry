@@ -11,7 +11,7 @@ import {
   LogOut, 
   Wrench, 
   Users, 
-  LayoutDashboard, 
+  LayoutDashboard,
   XCircle, 
   RefreshCw,
   HelpCircle,
@@ -31,11 +31,11 @@ const Sidebar = ({ user }) => {
   ];
 
   const livreurLinks = [
-    { name: 'Dashboard', path: '/livreur/dashboard', icon: Home },
-    { name: 'Clients', path: '/livreur/register-client', icon: UserPlus },
-    { name: 'Commandes', path: '/livreur/create-order', icon: Package },
-    { name: 'Livraisons', path: '/livreur/ready-for-delivery', icon: ClipboardList },
-    { name: 'Annulées', path: '/livreur/canceled-deliveries', icon: XCircle },
+    { name: 'Dashboard', path: '/livreur', icon: LayoutDashboard },
+    { name: 'Livraisons', path: '/livreur/delivery', icon: Truck },
+    { name: 'Commandes', path: '/livreur/orders', icon: Package },
+    { name: 'Clients', path: '/livreur/clients', icon: Users },
+    { name: 'Annulées', path: '/livreur/canceled', icon: XCircle },
   ];
 
   const employeLinks = [
@@ -87,19 +87,37 @@ const Sidebar = ({ user }) => {
         })}
       </nav>
 
-      {/* SUPPORT WIDGET (Hidden on tablet) */}
-      <div className="px-4 mb-6 hidden lg:block">
-        <div className="bg-background rounded-2xl p-4 border border-border">
-          <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center mb-3 shadow-sm">
-            <HelpCircle size={18} className="text-primary-500" />
+      {/* SUPPORT WIDGET (Livreur desktop only) */}
+      {user?.role === 'livreur' && (
+        <div className="px-4 mb-6 hidden lg:block">
+          <div className="bg-primary-50 rounded-2xl p-4 border border-primary-100">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mb-3 shadow-sm">
+              <HelpCircle size={18} className="text-primary-500" />
+            </div>
+            <h4 className="text-xs font-bold text-primary-600 mb-1 uppercase tracking-wider">BESOIN D'AIDE ?</h4>
+            <p className="text-[10px] text-text-muted mb-3 italic">"Guide Livreur"</p>
+            <button className="w-full py-2 bg-white border border-border rounded-lg text-[10px] font-bold text-text-primary hover:bg-white hover:text-primary-600 transition-colors flex items-center justify-center gap-2 shadow-sm">
+              Ouvrir le guide <ChevronRight size={12} />
+            </button>
           </div>
-          <h4 className="text-xs font-bold text-text-primary mb-1">Besoin d'aide ?</h4>
-          <p className="text-[10px] text-text-muted mb-3">Consultez notre guide ou contactez le support.</p>
-          <button className="w-full py-2 bg-surface border border-border rounded-lg text-[10px] font-semibold text-text-primary hover:bg-primary-50 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
-            Ouvrir le guide <ChevronRight size={12} />
-          </button>
         </div>
-      </div>
+      )}
+
+      {/* ADMIN SUPPORT WIDGET (Hidden on tablet) */}
+      {user?.role === 'admin' && (
+        <div className="px-4 mb-6 hidden lg:block">
+          <div className="bg-background rounded-2xl p-4 border border-border">
+            <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center mb-3 shadow-sm">
+              <HelpCircle size={18} className="text-primary-500" />
+            </div>
+            <h4 className="text-xs font-bold text-text-primary mb-1">Support Admin</h4>
+            <p className="text-[10px] text-text-muted mb-3">Consultez notre guide ou contactez le support.</p>
+            <button className="w-full py-2 bg-surface border border-border rounded-lg text-[10px] font-semibold text-text-primary hover:bg-primary-50 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
+              Ouvrir le guide <ChevronRight size={12} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* USER FOOTER */}
       <div className="mt-auto p-3 lg:p-4 border-t border-border bg-surface">
@@ -112,7 +130,7 @@ const Sidebar = ({ user }) => {
             <span className="text-[10px] font-medium text-text-muted capitalize">{user?.role}</span>
           </div>
         </div>
-        <LogoutButton showLabel={window.innerWidth >= 1024} />
+        <LogoutButton />
       </div>
     </aside>
   );

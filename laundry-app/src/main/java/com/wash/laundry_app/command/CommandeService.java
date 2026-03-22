@@ -5,14 +5,19 @@ import com.wash.laundry_app.auth.AuthService;
 import com.wash.laundry_app.clients.Client;
 import com.wash.laundry_app.clients.ClientNotFoundException;
 import com.wash.laundry_app.clients.ClientRepository;
-import com.wash.laundry_app.clients.ForbiddenOperationException;
+import com.wash.laundry_app.command.ForbiddenOperationException;
 import com.wash.laundry_app.tapis.Tapis;
 import com.wash.laundry_app.tapis.TapisRepository;
 import com.wash.laundry_app.users.User;
 import com.wash.laundry_app.users.employe.CommandDetails;
+import com.wash.laundry_app.users.lvreur.LivreurDashboardStatsDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 
 import java.math.BigDecimal;
@@ -213,8 +218,13 @@ public class CommandeService {
         Commande commande = commandeRepository.findById(commandeId)
                 .orElseThrow(CommandeNotFoundException::new);
 
+        // CRIT-2: verify ownership — only the assigned livreur can record payment
+        if (commande.getLivreur() == null || !commande.getLivreur().getId().equals(currentUser.getId())) {
+            throw new ForbiddenOperationException("Vous n'\u00eates pas autoris\u00e9 \u00e0 encaisser cette commande.");
+        }
+
         if (commande.getStatus() != CommandeStatus.livree) {
-            throw new ForbiddenOperationException("error");
+            throw new ForbiddenOperationException("Seules les commandes livr\u00e9es peuvent \u00eatre pay\u00e9es.");
         }
 
         String oldStatus = commande.getStatus().name();
@@ -230,28 +240,28 @@ public class CommandeService {
         commande = commandeRepository.save(commande);
 
         // Record status change
-        recordStatusChange(commande, oldStatus, CommandeStatus.payee.name(), currentUser, "Paiement enregistré");
+        recordStatusChange(commande, oldStatus, CommandeStatus.payee.name(), currentUser, "Paiement enregistr\u00e9");
 
         return commandeMapper.toDto(commande);
     }
 
-    // Cancel delivery (Client not found)
     @Transactional
-    public CommandeDTO cancelDelivery(Long commandeId) {
+    public CommandeDTO annulerCommande(Long id) {
         User currentUser = authService.currentUser();
 
-        Commande commande = commandeRepository.findById(commandeId)
+        Commande commande = commandeRepository.findById(id)
                 .orElseThrow(CommandeNotFoundException::new);
 
-        if (commande.getStatus() != CommandeStatus.livree) {
-            throw new ForbiddenOperationException("Seules les commandes 'sorties' (remises au livreur) peuvent être annulées.");
+        // CRIT-2: verify ownership
+        if (commande.getLivreur() == null || !commande.getLivreur().getId().equals(currentUser.getId())) {
+            throw new ForbiddenOperationException("Vous n'\u00eates pas autoris\u00e9 \u00e0 annuler cette commande.");
         }
 
         String oldStatus = commande.getStatus().name();
         commande.setStatus(CommandeStatus.annulee);
         commande = commandeRepository.save(commande);
 
-        recordStatusChange(commande, oldStatus, CommandeStatus.annulee.name(), currentUser, "Livraison annulée: Client introuvable/indisponible");
+        recordStatusChange(commande, oldStatus, CommandeStatus.annulee.name(), currentUser, "Livraison annul\u00e9e par le livreur");
 
         return commandeMapper.toDto(commande);
     }
@@ -264,8 +274,13 @@ public class CommandeService {
         Commande commande = commandeRepository.findById(commandeId)
                 .orElseThrow(CommandeNotFoundException::new);
 
+        // CRIT-2: verify ownership — only the assigned livreur can take the order
+        if (commande.getLivreur() == null || !commande.getLivreur().getId().equals(currentUser.getId())) {
+            throw new ForbiddenOperationException("Vous n'\u00eates pas autoris\u00e9 \u00e0 prendre en charge cette commande.");
+        }
+
         if (commande.getStatus() != CommandeStatus.prete) {
-            throw new ForbiddenOperationException("Seules les commandes 'prêtes' peuvent être prises en charge.");
+            throw new ForbiddenOperationException("Seules les commandes 'pr\u00eates' peuvent \u00eatre prises en charge.");
         }
 
         String oldStatus = commande.getStatus().name();
@@ -285,8 +300,13 @@ public class CommandeService {
         Commande commande = commandeRepository.findById(commandeId)
                 .orElseThrow(CommandeNotFoundException::new);
 
+        // CRIT-2: verify ownership
+        if (commande.getLivreur() == null || !commande.getLivreur().getId().equals(currentUser.getId())) {
+            throw new ForbiddenOperationException("Vous n'\u00eates pas autoris\u00e9 \u00e0 modifier cette commande.");
+        }
+
         if (commande.getStatus() != CommandeStatus.annulee) {
-            throw new ForbiddenOperationException("Seules les commandes annulées peuvent être retournées à l'atelier.");
+            throw new ForbiddenOperationException("Seules les commandes annul\u00e9es peuvent \u00eatre retourn\u00e9es \u00e0 l'atelier.");
         }
 
         String oldStatus = commande.getStatus().name();
@@ -294,7 +314,7 @@ public class CommandeService {
         commande.setStatus(CommandeStatus.retournee);
         commande = commandeRepository.save(commande);
 
-        recordStatusChange(commande, oldStatus, CommandeStatus.retournee.name(), currentUser, "Retournée à l'atelier par le livreur");
+        recordStatusChange(commande, oldStatus, CommandeStatus.retournee.name(), currentUser, "Retourn\u00e9e \u00e0 l'atelier par le livreur");
 
         return commandeMapper.toDto(commande);
     }
@@ -369,5 +389,36 @@ public class CommandeService {
                 .ifPresent(h -> dto.setPreparateurName(h.getUser().getName()));
 
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public LivreurDashboardStatsDTO getLivreurDashboardStats() {
+        var user = authService.currentUser();
+        Long livreurId = user.getId();
+
+        long pretesCount = commandeRepository.countByLivreurIdAndStatus(livreurId, CommandeStatus.livree);
+        long aRecupererCount = commandeRepository.countByLivreurIdAndStatus(livreurId, CommandeStatus.prete);
+        long annuleesCount = commandeRepository.countByLivreurIdAndStatus(livreurId, CommandeStatus.annulee);
+
+        // MissionsCount: count of orders created today or with active status
+        long missionsCount = pretesCount + aRecupererCount + annuleesCount;
+
+        return LivreurDashboardStatsDTO.builder()
+                .commandesPretesCount(pretesCount)
+                .commandesARecupererCount(aRecupererCount)
+                .commandesAnnuleesCount(annuleesCount)
+                .missionsCount(missionsCount)
+                .build();
+    }
+
+    public List<PaymentTypeDTO> getPaymentTypes() {
+        return Arrays.stream(ModePaiement.values())
+                .map(m -> new PaymentTypeDTO(m.name(), capitalize(m.name())))
+                .collect(Collectors.toList());
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }

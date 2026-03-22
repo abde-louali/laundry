@@ -2,8 +2,9 @@ package com.wash.laundry_app.clients;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ClientMapper {
 
     @Mapping(target = "phones", source = "phones")

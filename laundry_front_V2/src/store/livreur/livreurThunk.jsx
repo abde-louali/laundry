@@ -13,7 +13,11 @@ import {
   addClient,
   uploadFiles,
   getPreteCount,
-  getReadyOrders
+  getReadyOrders,
+  getDashboardStats,
+  confirmPaymentRequest,
+  getPaymentTypes,
+  returnToWorkshopRequest
 } from './livreurService'
 
 // ========== CLIENT THUNKS ==========
@@ -180,3 +184,53 @@ export const fetchReadyOrders = createAsyncThunk(
     }
   }
 );
+
+// ========== NEW REDESIGN THUNKS ==========
+
+export const fetchLivreurDashboardStats = createAsyncThunk(
+  'livreur/fetchDashboardStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getDashboardStats();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur stats');
+    }
+  }
+);
+
+export const confirmPayment = createAsyncThunk(
+  'livreur/confirmPayment',
+  async ({ orderId, data }, { rejectWithValue }) => {
+    try {
+      const response = await confirmPaymentRequest(orderId, data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur paiement');
+    }
+  }
+);
+
+export const fetchPaymentTypes = createAsyncThunk(
+  'livreur/fetchPaymentTypes',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getPaymentTypes();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur types paiement');
+    }
+  }
+);
+
+export const fetchCarpetTypes = createAsyncThunk(
+  'livreur/fetchCarpetTypes',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getCarpetTypes();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Erreur types tapis');
+    }
+  }
+);

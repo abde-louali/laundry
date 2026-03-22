@@ -10,15 +10,18 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.List;
+
+import com.wash.laundry_app.users.UserRepository;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
 @AllArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+
 //    this method is for filtering the Authorization of a user
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -37,9 +40,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                filterChain.doFilter(request,response);
                return;
            }
+
+//         check if user is inactive
+           var userOptional = userRepository.findById(jwt.getUserId());
+           if (userOptional.isPresent()) {
+               var user = userOptional.get();
+               Boolean isActive = user.getIsActive();
+               if (isActive != null && !isActive) {
+                   response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                   response.setContentType("application/json");
+                   response.setCharacterEncoding("UTF-8");
+                   response.getWriter().write("{\"error\": \"Compte désactivé\"}");
+                   return;
+               }
+               // HIGH-5: cache fetched user in request to avoid a 2nd DB hit in AuthService
+               request.setAttribute("_currentUser", user);
+           }
+
 //         this is creating and object of the authenticated one  create it from the userEmail we toke it from the tocken that sent in
 //          the request and also the credentials (that mens password or jwt also if needed in the request) and the authorities that means the rolls
-           ;
+           
            var authentication  = new UsernamePasswordAuthenticationToken(
                    jwt.getUserId(),
                    null,

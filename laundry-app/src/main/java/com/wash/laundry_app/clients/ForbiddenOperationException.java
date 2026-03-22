@@ -1,7 +1,7 @@
 package com.wash.laundry_app.clients;
 
-public class ForbiddenOperationException extends RuntimeException {
-    public ForbiddenOperationException(String message) {
-        super(message);
-    }
+/**
+ * @deprecated Moved to com.wash.laundry_app.command.ForbiddenOperationException
+ */
+class ForbiddenOperationException extends RuntimeException {
 }

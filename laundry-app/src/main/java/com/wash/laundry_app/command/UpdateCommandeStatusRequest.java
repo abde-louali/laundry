@@ -14,4 +14,9 @@ public class UpdateCommandeStatusRequest {
     private CommandeStatus newStatus;
 
     private String commentaire;
+
+    public CommandeStatus getNewStatus() { return newStatus; }
+    public void setNewStatus(CommandeStatus newStatus) { this.newStatus = newStatus; }
+    public String getCommentaire() { return commentaire; }
+    public void setCommentaire(String commentaire) { this.commentaire = commentaire; }
 }

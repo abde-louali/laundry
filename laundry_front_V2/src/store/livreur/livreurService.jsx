@@ -40,7 +40,7 @@ export const recordPayment = async (commandeId, data) => {
 
 // Cancel delivery
 export const cancelDeliveryApi = async (commandeId) => {
-  return await api.patch(`/livreur/commandes/${commandeId}/cancel`)
+  return await api.put(`/api/livreur/commandes/${commandeId}/annuler`)
 }
 
 // Get canceled deliveries
@@ -60,7 +60,40 @@ export const getPreteCount = async () => {
 
 // Get list of prete orders (for notification dropdown)
 export const getReadyOrders = async () => {
-  return await api.get('/livreur/commandes/prete')
+  return await api.get('/api/livreur/commandes/prete')
+}
+
+// ========== NEW REDESIGN ENDPOINTS ==========
+
+// Get dashboard stats
+export const getDashboardStats = async () => {
+  return await api.get('/api/livreur/dashboard/stats')
+}
+
+// Get ready for delivery (alias for consistency with request)
+export const getReadyDeliveries = async () => {
+  return await api.get('/api/livreur/commandes/ready-for-delivery')
+}
+
+// Get canceled deliveries (alias)
+export const getAnnulees = async () => {
+  return await api.get('/api/livreur/commandes/annulees')
+}
+
+// Return to workshop (alias)
+export const returnToWorkshopRequest = async (orderId) => {
+  return await api.put(`/api/livreur/commandes/${orderId}/retour-atelier`)
+}
+
+// Confirm payment (alias)
+export const confirmPaymentRequest = async (orderId, paymentData) => {
+  // Use the same RecordPaymentRequest format
+  return await api.post(`/api/livreur/commandes/${orderId}/confirmer-paiement`, paymentData)
+}
+
+// Get payment types
+export const getPaymentTypes = async () => {
+  return await api.get('/api/livreur/payment-types')
 }
 
 // Upload tapis image
@@ -72,6 +105,11 @@ export const uploadTapisImage = async (tapisId, file) => {
       'Content-Type': 'multipart/form-data'
     }
   });
+}
+
+// Get carpet types
+export const getCarpetTypes = async () => {
+  return await api.get('/api/livreur/carpet-types')
 }
 
 // Upload tapis images (plural)

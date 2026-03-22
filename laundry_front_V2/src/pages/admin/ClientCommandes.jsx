@@ -61,20 +61,27 @@ export default function ClientCommandes() {
           <p className="text-sm text-text-muted">Ce client n&apos;a pas encore de commandes.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {clientCommandes.map(c => (
             <button key={c.id} onClick={() => navigate(`/admin/commandes/${c.id}`)}
-              className="w-full bg-surface rounded-2xl shadow-card p-4 flex items-center gap-4 text-left hover:shadow-card-hover hover:-translate-y-0.5 transition-all group">
+              className="w-full bg-surface rounded-3xl shadow-card p-5 flex items-center gap-4 text-left hover:shadow-xl hover:-translate-y-1 transition-all group border border-border/50">
+              <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-primary-500 border border-border/50 group-hover:bg-primary-500 group-hover:text-white transition-colors">
+                 <ClipboardList size={22} />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-text-muted mb-1">#{c.numeroCommande}</p>
-                <StatusBadge status={c.status} />
+                <p className="text-[10px] font-black text-text-muted mb-1 uppercase tracking-widest px-0.5">#{c.numeroCommande}</p>
+                <div className="flex items-center gap-2">
+                   <StatusBadge status={c.status} size="sm" />
+                </div>
               </div>
               {c.montantTotal != null && (
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-semibold text-text-primary">{c.montantTotal} DH</p>
+                <div className="text-right flex-shrink-0 bg-gray-50 px-3 py-2 rounded-xl group-hover:bg-primary-50 transition-colors">
+                  <p className="text-sm font-black text-text-primary tracking-tight">{c.montantTotal} <span className="text-[10px] text-text-muted font-bold">DH</span></p>
                 </div>
               )}
-              <ChevronRight size={16} className="text-text-muted group-hover:text-primary-600 transition-colors flex-shrink-0" />
+              <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-text-muted group-hover:bg-primary-200 group-hover:text-primary-700 transition-all shrink-0">
+                 <ChevronRight size={16} strokeWidth={3} />
+              </div>
             </button>
           ))}
         </div>

@@ -234,47 +234,63 @@ export default function AllClients() {
                 )}
               </tbody>
             </table>
-          </div>
-
-          {/* Mobile Stacked Layout (< md) */}
-          <div className="md:hidden divide-y divide-border">
+                {/* Mobile Stacked Layout (< md) */}
+          <div className="md:hidden divide-y divide-border/30 bg-white">
             {paginatedClients.map((client, idx) => (
-              <div key={client.id} className="p-4 hover:bg-slate-50 transition-all active:bg-slate-100" onClick={() => navigate(`/admin/clients/${client.id}`)}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${colorArray[idx % colorArray.length]}`}>
+              <div 
+                key={client.id} 
+                className="p-5 active:bg-gray-50 transition-all" 
+                onClick={() => navigate(`/admin/clients/${client.id}`)}
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shadow-sm border border-white/50 ${colorArray[idx % colorArray.length]}`}>
                     {initials(client.name || client.nom)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-text-primary truncate">{client.name || client.nom || `Client #${client.id}`}</h3>
-                      <div className="px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-black">
+                      <h3 className="text-sm font-black text-text-primary truncate tracking-tight uppercase">
+                        {client.name || client.nom || `Client #${client.id}`}
+                      </h3>
+                      <div className="px-2 py-0.5 rounded-lg bg-gray-100 text-text-muted text-[9px] font-black uppercase tracking-widest border border-border/50">
                         {client.totalCommandes || 0} CMD
                       </div>
                     </div>
-                    <p className="text-[10px] text-text-muted italic">Client depuis {formatDateShort(client.createdAt)}</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest opacity-60">
+                       Depuis {formatDateShort(client.createdAt)}
+                    </p>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="bg-background rounded-lg p-2 border border-border/50">
-                    <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Téléphone</p>
-                    <p className="text-xs font-semibold text-text-primary truncate">{(client.phones && client.phones[0]?.phoneNumber) || '—'}</p>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100">
+                    <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Téléphone</p>
+                    <p className="text-[11px] font-black text-text-primary truncate">
+                       {client.phones?.[0]?.phoneNumber || client.telephone || '—'}
+                    </p>
                   </div>
-                  <div className="bg-background rounded-lg p-2 border border-border/50">
-                    <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5">Dernière commande</p>
-                    <p className="text-xs font-semibold text-text-secondary truncate">{getRelativeTime(client.lastOrderDate)}</p>
+                  <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100">
+                    <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Dernière activité</p>
+                    <p className="text-[11px] font-black text-text-secondary truncate">
+                       {getRelativeTime(client.lastOrderDate)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-text-muted">
-                    <MapPin size={12} />
-                    <span className="text-[10px] font-medium truncate max-w-[150px]">{(client.addresses && client.addresses[0]?.addressLine1) || 'Pas d\'adresse'}</span>
+                <div className="flex items-center justify-between bg-gray-100/50 px-3 py-2.5 rounded-xl border border-border/30">
+                  <div className="flex items-center gap-2 text-text-muted min-w-0">
+                    <MapPin size={12} className="shrink-0" />
+                    <span className="text-[10px] font-bold truncate opacity-80 uppercase tracking-tight">
+                       {client.addresses?.[0]?.address || 'Aucune adresse' }
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-primary-600 flex items-center gap-1">Détails <ChevronRight size={14} /></span>
+                  <div className="flex items-center gap-1 text-[10px] font-black text-primary-500 uppercase tracking-widest shrink-0">
+                     Détails <ChevronRight size={14} strokeWidth={3} />
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+
           </div>
         </div>
 

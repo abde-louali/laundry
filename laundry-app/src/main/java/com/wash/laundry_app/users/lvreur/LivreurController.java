@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/livreur")
+@RequestMapping({"/livreur", "/api/livreur"})
 @AllArgsConstructor
 public class LivreurController {
 
@@ -88,10 +88,10 @@ public class LivreurController {
     }
 
     // Cancel delivery (change LIVREE -> ANNULEE)
-    @PatchMapping("/commandes/{id}/cancel")
-    public ResponseEntity<CommandeDTO> cancelDelivery(@PathVariable Long id) {
-        CommandeDTO commande = commandeService.cancelDelivery(id);
-        return ResponseEntity.ok(commande);
+
+    @PutMapping("/commandes/{id}/annuler")
+    public ResponseEntity<CommandeDTO> annulerCommande(@PathVariable Long id) {
+        return ResponseEntity.ok(commandeService.annulerCommande(id));
     }
 
     // Get count of prete orders (notification badge)
@@ -122,7 +122,46 @@ public class LivreurController {
         return ResponseEntity.ok(commande);
     }
 
-    // ========== TAPIS IMAGE UPLOAD ==========
+    // ========== NEW/ALIASED ENDPOINTS FROM REDESIGN REQUEST ==========
+
+    // GET /api/livreur/dashboard/stats
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<LivreurDashboardStatsDTO> getDashboardStats() {
+        return ResponseEntity.ok(commandeService.getLivreurDashboardStats());
+    }
+
+    // GET /api/livreur/commandes/prete (Alias for ready orders)
+    @GetMapping("/commandes/prete-alias") // Avoiding conflict with existing /prete
+    public ResponseEntity<List<CommandeDTO>> getReadyOrdersAlias() {
+        return ResponseEntity.ok(commandeService.getReadyOrdersForLivreur());
+    }
+
+    // GET /api/livreur/commandes/annulees (Alias for canceled-deliveries)
+    @GetMapping("/commandes/annulees")
+    public ResponseEntity<List<CommandeDTO>> getAnnulees() {
+        return ResponseEntity.ok(commandeService.getCanceledDeliveriesByLivreur());
+    }
+
+    // PUT /api/livreur/commandes/{id}/retour-atelier (Alias for return)
+    @PutMapping("/commandes/{id}/retour-atelier")
+    public ResponseEntity<CommandeDTO> returnToAtelier(@PathVariable Long id) {
+        return ResponseEntity.ok(commandeService.returnToWorkplace(id));
+    }
+
+    // POST /api/livreur/commandes/{id}/confirmer-paiement (Alias for payment)
+    @PostMapping("/commandes/{id}/confirmer-paiement")
+    public ResponseEntity<CommandeDTO> confirmPayment(
+            @PathVariable Long id,
+            @Valid @RequestBody RecordPaymentRequest request) {
+        return ResponseEntity.ok(commandeService.recordPayment(id, request));
+    }
+
+    // GET /api/payment-types (Note: mapped under /api/livreur here for simplicity, but we can use absolute path)
+    @GetMapping("/payment-types")
+    public ResponseEntity<List<PaymentTypeDTO>> getPaymentTypes() {
+        return ResponseEntity.ok(commandeService.getPaymentTypes());
+    }
+
     @PostMapping("/tapis/upload")
     public ResponseEntity<List<Map<String, String>>> uploadTapisImages(@RequestParam("files") MultipartFile[] files) {
         List<Map<String, String>> result = java.util.Arrays.stream(files).map(file -> {

@@ -30,9 +30,11 @@ public class AdminService {
     private final ClientRepository clientRepository;
     private final ClientMapper clientMapper;
 
-    // create a new user
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<UserDto> createUser(UserRegisterRequest request, UriComponentsBuilder uriBuilder){
-        userRepository.existsByEmail(request.getEmail()).orElseThrow(InvalidCredintialsException::new);
+        if (userRepository.existsByEmail(request.getEmail()).isPresent()) {
+            throw new InvalidCredentialsException("Cet email est d\u00e9j\u00e0 utilis\u00e9.");
+        }
         var user = userMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.livreur);
@@ -55,82 +57,79 @@ public class AdminService {
         var user =  userRepository.findById(id).orElseThrow(UserNotFoundException::new);
         return userMapper.toDto(user);
     }
-// get all active user
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<UserDto> getAllActiveUsers(){
         return userRepository.findAllActive().stream().map(userMapper::toDto).toList();
     }
-// get all non active users
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<UserDto> getAllInActiveUsers(){
         return userRepository.findAllInActive().stream().map(userMapper::toDto).toList();
     }
-// inactive a user
+    @org.springframework.transaction.annotation.Transactional
     public void inActive(Long id){
         var user =  userRepository.findById(id).orElseThrow(UserNotFoundException::new);
         if(user.getRole() == Role.admin){
-            throw new ForbiddenAdminErrorsException("e");
+            throw new ForbiddenAdminErrorsException("Impossible de d\u00e9sactiver un compte administrateur.");
         }
         user.setIsActive(false);
         userRepository.save(user);
     }
-// activate a user
+    @org.springframework.transaction.annotation.Transactional
     public void activateUser(Long id){
         var user =  userRepository.findById(id).orElseThrow(UserNotFoundException::new);
         if(user.getRole() == Role.admin){
-            throw new ForbiddenAdminErrorsException("e");
+            throw new ForbiddenAdminErrorsException("L'administrateur est d\u00e9j\u00e0 actif.");
         }
         user.setIsActive(true);
         userRepository.save(user);
     }
-//  delete a user
+    @org.springframework.transaction.annotation.Transactional
     public void deleteUser(Long id){
         var user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
         if(user.getRole() == Role.admin || user.getIsActive()){
-            throw new ForbiddenAdminErrorsException("e");
+            throw new ForbiddenAdminErrorsException("Impossible de supprimer un compte administrateur ou un utilisateur actif.");
         }
         userRepository.delete(user);
     }
-//    get all commandes
-    public List<CommandSummaryDto> getCommands(){
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<CommandeDTO> getCommands(){
         return commandeRepository.findAll().stream()
                 .sorted(java.util.Comparator.comparing(Commande::getDateCreation).reversed())
-                .map(commandeMapper::TodTo).toList();
+                .map(commandeMapper::toDto).toList();
     }
 
-    // get filtered commandes
-    public List<CommandSummaryDto> getFilteredCommands(String status, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, String search, Integer limit, String sortDirection) {
-        var list = commandeRepository.findAll();
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<CommandeDTO> getFilteredCommands(String status, java.time.LocalDate dateDebut, java.time.LocalDate dateFin, String search, Integer limit, String sortDirection) {
         
+        CommandeStatus statusEnum = null;
         if (status != null && !status.trim().isEmpty()) {
-            list = list.stream().filter(c -> c.getStatus().name().equalsIgnoreCase(status)).toList();
+            try {
+                statusEnum = CommandeStatus.valueOf(status.toLowerCase());
+            } catch (IllegalArgumentException e) {
+                // Ignore invalid status
+            }
         }
-        if (dateDebut != null) {
-            list = list.stream().filter(c -> c.getDateCreation() != null && !c.getDateCreation().toLocalDate().isBefore(dateDebut)).toList();
-        }
-        if (dateFin != null) {
-            list = list.stream().filter(c -> c.getDateCreation() != null && !c.getDateCreation().toLocalDate().isAfter(dateFin)).toList();
-        }
-        if (search != null && !search.trim().isEmpty()) {
-            String lowerSearch = search.toLowerCase();
-            list = list.stream()
-                .filter(c -> (c.getNumeroCommande() != null && c.getNumeroCommande().toLowerCase().contains(lowerSearch)) ||
-                             (c.getClient() != null && c.getClient().getName() != null && c.getClient().getName().toLowerCase().contains(lowerSearch)))
-                .toList();
-        }
+
+        java.time.LocalDateTime dateTimeDebut = dateDebut != null ? dateDebut.atStartOfDay() : null;
+        java.time.LocalDateTime dateTimeFin = dateFin != null ? dateFin.atTime(23, 59, 59) : null;
         
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by("dateCreation");
         if ("asc".equalsIgnoreCase(sortDirection)) {
-            list = list.stream().sorted(java.util.Comparator.comparing(Commande::getDateCreation)).toList();
+            sort = sort.ascending();
         } else {
-             list = list.stream().sorted(java.util.Comparator.comparing(Commande::getDateCreation).reversed()).toList();
+            sort = sort.descending();
         }
-        
+
+        List<Commande> result = commandeRepository.findFiltered(statusEnum, dateTimeDebut, dateTimeFin, search, sort);
+
         if (limit != null && limit > 0) {
-            list = list.stream().limit(limit).toList();
+            result = result.stream().limit(limit).toList();
         }
-        
-        return list.stream().map(commandeMapper::TodTo).toList();
+
+        return result.stream().map(commandeMapper::toDto).toList();
     }
 
-    // export commandes to CSV
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public byte[] exportCommandesToCsv() {
         List<Commande> commandes = commandeRepository.findAll().stream()
                 .sorted(java.util.Comparator.comparing(Commande::getDateCreation).reversed())
@@ -159,7 +158,7 @@ public class AdminService {
                 .orElseThrow(CommandeNotFoundException::new);
         return commandeMapper.toDto(commande);
     }
-//    get all the clients
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<ClientDto> getClients(){
         return clientRepository.findAll().stream()
                 .map(client -> {
@@ -169,7 +168,7 @@ public class AdminService {
                 }).toList();
     }
 
-    // get all clients with filtering
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<ClientDto> getClientsFiltered(String search){
         var list = clientRepository.findAll();
         if (search != null && !search.trim().isEmpty()) {
@@ -198,7 +197,7 @@ public class AdminService {
         }
     }
 
-    // get client statistics
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ClientStatisticsDto getClientStatistics() {
         List<Client> allClients = clientRepository.findAll();
         long totalClients = allClients.size();
@@ -223,9 +222,9 @@ public class AdminService {
             .build();
     }
 
-    //    get all the clients wiith commands details
-    public List<CommandSummaryDto> getClientCommandes(Long id){
-        var client = clientRepository.findById(id).orElseThrow(()-> new ClientNotFoundException("client not found"));
-        return commandeRepository.findByClientId(client.getId()).stream().map(commandeMapper::TodTo).toList();
+        @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<CommandeDTO> getClientCommandes(Long id){
+        var client = clientRepository.findById(id).orElseThrow(()-> new ClientNotFoundException("Le client est introuvable."));
+        return commandeRepository.findByClientId(client.getId()).stream().map(commandeMapper::toDto).toList();
     }
 }

@@ -3,6 +3,7 @@ package com.wash.laundry_app.users.lvreur;
 import com.wash.laundry_app.auth.AuthService;
 import com.wash.laundry_app.clients.*;
 import com.wash.laundry_app.command.CommandeRepository;
+import com.wash.laundry_app.command.ForbiddenOperationException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

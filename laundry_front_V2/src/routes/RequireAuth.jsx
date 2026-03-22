@@ -1,14 +1,28 @@
-import { Navigate, Outlet } from "react-router-dom"
+import { Navigate, Outlet, useLocation } from "react-router-dom"
 import { useSelector } from "react-redux"
-import { selectCurrentToken } from "../store/auth/authSelector"
 
+const RequireAuth = ({ allowedRoles }) => {
+  const { user, token } = useSelector(
+    state => state.auth
+  )
+  const location = useLocation()
 
+  // Not authenticated
+  if (!token || !user) {
+    return <Navigate to="/" 
+                     state={{ from: location }} 
+                     replace />
+  }
 
-const RequireAuth = () => {
-  const token = useSelector(selectCurrentToken)
+  // Authenticated but INACTIVE
+  if (user.isActive === false) {
+    return <Navigate to="/compte-inactif" replace />
+  }
 
-  if (!token) {
-    return <Navigate to="/" replace />
+  // Wrong role
+  if (allowedRoles && 
+      !allowedRoles.includes(user.role)) {
+    return <Navigate to="/non-autorise" replace />
   }
 
   return <Outlet />

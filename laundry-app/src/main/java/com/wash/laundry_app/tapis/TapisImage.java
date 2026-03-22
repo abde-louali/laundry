@@ -29,4 +29,16 @@ public class TapisImage {
     @Enumerated(EnumType.STRING)
     @Column(name = "image_type")
     private TapisImageType imageType = TapisImageType.BEFORE;
+
+    // Explicit Getters/Setters to bypass Lombok failures
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Tapis getTapis() { return tapis; }
+    public void setTapis(Tapis tapis) { this.tapis = tapis; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public Boolean getIsMain() { return isMain; }
+    public void setIsMain(Boolean isMain) { this.isMain = isMain; }
+    public TapisImageType getImageType() { return imageType; }
+    public void setImageType(TapisImageType imageType) { this.imageType = imageType; }
 }

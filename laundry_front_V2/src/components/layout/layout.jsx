@@ -14,14 +14,7 @@ const Layout = () => {
 
   // LOGIN PAGE STRUCTURAL EXEMPTION
   if (isLoginPage) {
-    return (
-      <div className="min-h-screen bg-background font-sans flex flex-col">
-        <main className="flex-grow flex items-center justify-center">
-          <Outlet />
-        </main>
-        <Footer />
-      </div>
-    );
+    return <Outlet />;
   }
 
   return (

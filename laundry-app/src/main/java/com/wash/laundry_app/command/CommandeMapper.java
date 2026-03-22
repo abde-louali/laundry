@@ -7,8 +7,9 @@ import com.wash.laundry_app.users.employe.CommandDetails;
 import com.wash.laundry_app.users.employe.CommandDtoEmploye;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", uses = {ClientMapper.class, UserMapper.class, CommandeTapisMapper.class})
+@Mapper(componentModel = "spring", uses = {ClientMapper.class, UserMapper.class, CommandeTapisMapper.class}, unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CommandeMapper {
 
 

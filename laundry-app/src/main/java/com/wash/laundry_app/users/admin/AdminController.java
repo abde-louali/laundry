@@ -71,14 +71,14 @@ public class AdminController {
 
 //    get all commandes
     @GetMapping("/commandes")
-    public ResponseEntity<List<CommandSummaryDto>> allCommandes(
+    public ResponseEntity<List<CommandeDTO>> allCommandes(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) String sort) {
-        List<CommandSummaryDto> commandes = adminService.getFilteredCommands(status, dateDebut, dateFin, search, limit, sort);
+        List<CommandeDTO> commandes = adminService.getFilteredCommands(status, dateDebut, dateFin, search, limit, sort);
         return ResponseEntity.ok(commandes);
     }
 
@@ -113,8 +113,8 @@ public class AdminController {
 
     // Get client commands
     @GetMapping("/client/{id}")
-    public ResponseEntity<List<CommandSummaryDto>> getClients(@PathVariable  Long id) {
-        List<CommandSummaryDto> commandes = adminService.getClientCommandes(id);
+    public ResponseEntity<List<CommandeDTO>> getClients(@PathVariable  Long id) {
+        List<CommandeDTO> commandes = adminService.getClientCommandes(id);
         return ResponseEntity.ok(commandes);
     }
 
@@ -309,20 +309,7 @@ public class AdminController {
 //    }
 //
 
-    @ExceptionHandler(ForbiddenAdminErrorsException.class)
-    public ResponseEntity<?> handleAdminForbiden(){
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("you can't made changes on this user");
-    }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<?> handleNotFound(){
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("user not found");
-    }
-
-    @ExceptionHandler(InvalidCredintialsException.class)
-    public ResponseEntity<?> handlecredinrials(){
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("invalid email");
-    }
 }
 
 

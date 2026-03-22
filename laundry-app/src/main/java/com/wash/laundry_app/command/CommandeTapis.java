@@ -47,6 +47,22 @@ public class CommandeTapis {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Explicit Getters/Setters to bypass Lombok failures
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Commande getCommande() { return commande; }
+    public void setCommande(Commande commande) { this.commande = commande; }
+    public Tapis getTapis() { return tapis; }
+    public void setTapis(Tapis tapis) { this.tapis = tapis; }
+    public Integer getQuantite() { return quantite; }
+    public void setQuantite(Integer quantite) { this.quantite = quantite; }
+    public BigDecimal getPrixUnitaire() { return prixUnitaire; }
+    public void setPrixUnitaire(BigDecimal prixUnitaire) { this.prixUnitaire = prixUnitaire; }
+    public BigDecimal getSousTotal() { return sousTotal; }
+    public void setSousTotal(BigDecimal sousTotal) { this.sousTotal = sousTotal; }
+    public TapisEtat getEtat() { return etat; }
+    public void setEtat(TapisEtat etat) { this.etat = etat; }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

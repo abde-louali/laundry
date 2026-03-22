@@ -107,21 +107,38 @@ export default function ReturnedOrders() {
           </div>
 
           {/* Mobile cards */}
-          <div className="lg:hidden space-y-3">
+          <div className="lg:hidden space-y-4">
             {returnedOrders.map(order => (
-              <div key={order.id} className="bg-surface rounded-2xl shadow-card p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-semibold text-text-primary">#{order.numeroCommande}</p>
-                    <p className="text-xs text-text-muted mt-0.5">{order.commandeTapis?.length || 0} tapis • {order.montantTotal} DH</p>
-                  </div>
-                  <StatusBadge status={order.status} />
+              <div 
+                key={order.id} 
+                onClick={() => navigate(`/employe/commandes/${order.id}`)}
+                className="bg-white rounded-[2rem] shadow-md p-5 border border-border/40 active:scale-[0.98] transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest mb-0.5">Commande</span>
+                      <p className="text-lg font-black text-text-primary tracking-tight">#{order.numeroCommande}</p>
+                   </div>
+                   <StatusBadge status={order.status} />
                 </div>
+                
+                <div className="bg-gray-50/50 p-4 rounded-2xl mb-4 border border-gray-100">
+                   <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-text-muted">
+                      <span>{order.commandeTapis?.length || 0} Articles</span>
+                      <span className="text-primary-600">{order.montantTotal} DH</span>
+                   </div>
+                   <div className="flex items-center gap-1.5 mt-2 text-text-muted">
+                      <CalendarDays size={12} />
+                      <span className="text-[9px] font-bold uppercase tracking-widest">
+                         Retourné le {new Date(order.updatedAt || order.createdAt).toLocaleDateString('fr-FR')}
+                      </span>
+                   </div>
+                </div>
+
                 <button
-                  onClick={() => navigate(`/employe/commandes/${order.id}`)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary-50 text-primary-600 border border-primary-200 text-sm font-medium hover:bg-primary-100 transition-colors min-h-[48px]"
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-primary-500 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-primary-500/20 active:bg-primary-600 transition-all"
                 >
-                  Traiter le retour <ChevronRight size={16} />
+                  Traiter le retour <ChevronRight size={16} strokeWidth={3} />
                 </button>
               </div>
             ))}

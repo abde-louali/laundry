@@ -21,6 +21,11 @@ public class CreateCommandeRequest {
     @Valid
     private List<TapisItem> tapis;
 
+    public Long getClientId() { return clientId; }
+    public void setClientId(Long clientId) { this.clientId = clientId; }
+    public List<TapisItem> getTapis() { return tapis; }
+    public void setTapis(List<TapisItem> tapis) { this.tapis = tapis; }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -42,5 +47,18 @@ public class CreateCommandeRequest {
 
         // ✅ NEW: Index of the main image (optional, defaults to 0)
         private Integer mainImageIndex;
+
+        public String getNom() { return nom; }
+        public void setNom(String nom) { this.nom = nom; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public java.math.BigDecimal getPrixUnitaire() { return prixUnitaire; }
+        public void setPrixUnitaire(java.math.BigDecimal prixUnitaire) { this.prixUnitaire = prixUnitaire; }
+        public Integer getQuantite() { return quantite; }
+        public void setQuantite(Integer quantite) { this.quantite = quantite; }
+        public List<String> getImageUrls() { return imageUrls; }
+        public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+        public Integer getMainImageIndex() { return mainImageIndex; }
+        public void setMainImageIndex(Integer mainImageIndex) { this.mainImageIndex = mainImageIndex; }
     }
 }

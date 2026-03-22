@@ -153,10 +153,8 @@ const adminSlice = createSlice({
                     const user = state.activeUsers[userIndex];
                     state.activeUsers.splice(userIndex, 1);
 
-                    // Update status and add to inactive
-                    // Note: Ideally the backend returns the full updated user object in action.payload.data
-                    // If action.payload.data is the full user, use that. If it's void, update manually:
-                    const updatedUser = { ...user, isActive: false };
+                    // Update status and add to inactive (Normalize both fields)
+                    const updatedUser = { ...user, isActive: false, active: false };
                     state.inactiveUsers.push(updatedUser);
                 }
             })
@@ -185,8 +183,8 @@ const adminSlice = createSlice({
                     const user = state.inactiveUsers[userIndex];
                     state.inactiveUsers.splice(userIndex, 1);
 
-                    // Update status and add to active
-                    const updatedUser = { ...user, isActive: true };
+                    // Update status and add to active (Normalize both fields)
+                    const updatedUser = { ...user, isActive: true, active: true };
                     state.activeUsers.push(updatedUser);
                 }
             })

@@ -39,6 +39,18 @@ public class Tapis {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Explicit Getters/Setters to bypass Lombok failures
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getNom() { return nom; }
+    public void setNom(String nom) { this.nom = nom; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public BigDecimal getPrixUnitaire() { return prixUnitaire; }
+    public void setPrixUnitaire(BigDecimal prixUnitaire) { this.prixUnitaire = prixUnitaire; }
+    public List<TapisImage> getImages() { return images; }
+    public void setImages(List<TapisImage> images) { this.images = images; }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

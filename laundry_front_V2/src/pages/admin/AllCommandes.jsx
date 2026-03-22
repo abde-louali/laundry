@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   ClipboardList, Search, Loader2, Download, 
   Filter, Calendar, X, RefreshCw, FileText,
-  Clock, Users
+  Clock, Users, Phone, Package, ChevronRight
 } from 'lucide-react';
 import { fetchAllCommandes, downloadCommandesCsv } from '../../store/admin/adminThunk';
 import { selectAllCommandes, selectAdminLoading } from '../../store/admin/adminSelectors';
@@ -21,6 +21,25 @@ const STATUS_LIST = [
   { value: 'payee', label: 'Payée' },
   { value: 'annulee', label: 'Annulée' }
 ];
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return { date: 'N/A', time: '' };
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return { 
+    date: 'N/A', time: '' 
+  };
+  return {
+    date: d.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }),
+    time: d.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  };
+};
 
 export default function AllCommandes() {
   const dispatch = useDispatch();
@@ -68,7 +87,30 @@ export default function AllCommandes() {
     setDateFin('');
   };
 
-  // KPI Calculations (on the current local list for speed, or could be from backend)
+  const getClientDisplayName = (order) => {
+    return order.client?.name || order.clientNom || order.client?.nom || 'Client #' + (order.client?.id || order.clientId || '?');
+  };
+
+  const getClientPhone = (order) => {
+    return order.client?.phones?.[0]?.phoneNumber 
+           || order.client?.telephone 
+           || order.client?.telephones?.[0]?.numero 
+           || order.numeroTelephone 
+           || 'N/A';
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = ['bg-blue-100 text-blue-600', 'bg-emerald-100 text-emerald-600', 'bg-amber-100 text-amber-600', 'bg-indigo-100 text-indigo-600', 'bg-rose-100 text-rose-600', 'bg-purple-100 text-purple-600'];
+    const index = name ? name.length % colors.length : 0;
+    return colors[index];
+  };
+
+  // KPI Calculations
   const totalAmount = Array.isArray(commandes) ? commandes.reduce((acc, c) => acc + (c.montantTotal || 0), 0) : 0;
   const pendingCount = Array.isArray(commandes) ? commandes.filter(c => c.status === 'en_attente').length : 0;
 
@@ -78,55 +120,55 @@ export default function AllCommandes() {
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Gestion des Commandes</h1>
-          <p className="text-sm text-text-muted font-medium">Consultez et gérez l'ensemble des transactions.</p>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight uppercase">Base de Données Commandes</h1>
+          <p className="text-sm text-text-muted font-bold uppercase tracking-widest opacity-60">Historique complet et gestion des flux</p>
         </div>
         <button 
           onClick={handleExportCSV}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-500/20 hover:bg-primary-700 transition-all active:scale-95"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary-500/20 hover:bg-primary-700 transition-all active:scale-95"
         >
-          <Download size={18} />
-          <span>Exporter CSV</span>
+          <Download size={16} />
+          <span>Exporter (CSV)</span>
         </button>
       </div>
 
       {/* MINI KPI ROW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
-            <ClipboardList size={20} />
+        <div className="bg-surface p-5 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4 group hover:border-primary-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <ClipboardList size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Total</p>
-            <p className="text-lg font-black text-text-primary">{commandes?.length || 0}</p>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Global</p>
+            <p className="text-xl font-black text-text-primary tracking-tight">{commandes?.length || 0}</p>
           </div>
         </div>
-        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
-            <RefreshCw size={20} />
+        <div className="bg-surface p-5 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <RefreshCw size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Revenus</p>
-            <p className="text-lg font-black text-text-primary">{totalAmount.toLocaleString()} DH</p>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Valeur</p>
+            <p className="text-xl font-black text-text-primary tracking-tight">{totalAmount.toLocaleString()} <span className="text-[10px] text-text-muted font-bold">DH</span></p>
           </div>
         </div>
-        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
-            <Clock size={20} />
+        <div className="bg-surface p-5 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4 group hover:border-amber-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Clock size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">En Attente</p>
-            <p className="text-lg font-black text-text-primary">{pendingCount}</p>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Urgent</p>
+            <p className="text-xl font-black text-text-primary tracking-tight">{pendingCount}</p>
           </div>
         </div>
-        <div className="bg-surface p-4 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
-            <Download size={20} />
+        <div className="bg-surface p-5 rounded-2xl border border-border/50 shadow-sm flex items-center gap-4 group hover:border-indigo-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Users size={22} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Articles</p>
-            <p className="text-lg font-black text-text-primary">
-              {commandes?.reduce((acc, c) => acc + (c.commandeItems?.length || 0), 0) || 0}
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Volumes</p>
+            <p className="text-xl font-black text-text-primary tracking-tight">
+              {commandes?.reduce((acc, c) => acc + (c.commandeTapis?.reduce((sum, item) => sum + (item.quantite || 1), 0) || 0), 0) || 0} <span className="text-[10px] text-text-muted font-bold">ARC</span>
             </p>
           </div>
         </div>
@@ -134,30 +176,30 @@ export default function AllCommandes() {
 
       {/* FILTERS SECTION */}
       <div className="bg-surface rounded-2xl border border-border/50 shadow-card overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-center">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-center bg-gray-50/20">
           <div className="relative flex-1 w-full">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input 
               type="text" 
-              placeholder="Rechercher par numéro, client..." 
+              placeholder="N° Commande, Nom client..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-background border-none rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-primary-500/20 outline-none placeholder:text-text-muted"
+              className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 text-sm font-bold focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none placeholder:text-text-muted placeholder:font-normal"
             />
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${showFilters ? 'bg-primary-50 text-primary-600' : 'bg-background text-text-secondary hover:bg-border/50'}`}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${showFilters ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'bg-background text-text-secondary border border-border hover:bg-border/30'}`}
             >
-              <Filter size={18} />
-              <span>Filtres</span>
-              {(status !== 'all' || dateDebut || dateFin) && <div className="w-2 h-2 rounded-full bg-primary-500" />}
+              <Filter size={16} />
+              <span>Avancé</span>
+              {(status !== 'all' || dateDebut || dateFin) && <div className="w-1.5 h-1.5 rounded-full bg-current ml-1" />}
             </button>
             <button 
               onClick={loadData}
               disabled={loading}
-              className="px-4 py-2.5 bg-background text-text-secondary rounded-xl hover:bg-border/50 transition-all disabled:opacity-50"
+              className="px-4 py-3 bg-background border border-border text-text-secondary rounded-xl hover:bg-border/30 transition-all disabled:opacity-50"
             >
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -166,141 +208,223 @@ export default function AllCommandes() {
 
         {/* EXPANDABLE FILTERS */}
         {showFilters && (
-          <div className="p-6 bg-background/30 border-b border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-down">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Statut</label>
+          <div className="p-8 bg-gray-50/50 border-b border-border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 animate-slide-down">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] block">État actuel</label>
               <select 
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-sm font-medium outline-none focus:border-primary-500"
+                className="w-full bg-surface border border-border/80 rounded-xl px-4 py-2.5 text-xs font-black uppercase tracking-tighter outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/5 transition-all"
               >
                 {STATUS_LIST.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Date Début</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] block">Depuis le</label>
               <div className="relative">
                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input 
                   type="date" 
                   value={dateDebut}
                   onChange={(e) => setDateDebut(e.target.value)}
-                  className="w-full bg-surface border border-border rounded-xl pl-9 pr-3 py-2 text-sm font-medium outline-none focus:border-primary-500"
+                  className="w-full bg-surface border border-border/80 rounded-xl pl-10 pr-4 py-2.5 text-xs font-black outline-none focus:border-primary-500 transition-all"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Date Fin</label>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] block">Jusqu'au</label>
               <div className="relative">
                 <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input 
                   type="date" 
                   value={dateFin}
                   onChange={(e) => setDateFin(e.target.value)}
-                  className="w-full bg-surface border border-border rounded-xl pl-9 pr-3 py-2 text-sm font-medium outline-none focus:border-primary-500"
+                  className="w-full bg-surface border border-border/80 rounded-xl pl-10 pr-4 py-2.5 text-xs font-black outline-none focus:border-primary-500 transition-all"
                 />
               </div>
             </div>
-            <div className="flex items-end gap-2">
+            <div className="flex items-end">
               <button 
                 onClick={clearFilters}
-                className="flex-1 bg-surface border border-border text-text-secondary px-4 py-2 rounded-xl text-sm font-bold hover:bg-white transition-all flex items-center justify-center gap-2"
+                className="flex-1 bg-white border-2 border-dashed border-border text-text-secondary px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-primary-300 hover:text-primary-600 transition-all flex items-center justify-center gap-2 group"
               >
-                <X size={16} />
-                Réinitialiser
+                <X size={14} className="group-hover:rotate-90 transition-transform duration-300" />
+                Reset
               </button>
             </div>
           </div>
         )}
 
-        {/* TABLE VIEW */}
-        <div className="overflow-x-auto min-h-[400px]">
-          <table className="w-full text-left">
+        {/* MOBILE CARDS VIEW */}
+        <div className="lg:hidden divide-y divide-border/30 bg-white">
+          {loading && Array.isArray(commandes) && commandes.length === 0 ? (
+            <div className="py-20 text-center">
+              <Loader2 size={32} className="animate-spin text-primary-500 mx-auto mb-3" />
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Indexation...</p>
+            </div>
+          ) : Array.isArray(commandes) && commandes.length > 0 ? (
+            commandes.map((c) => {
+              const { date, time } = formatDateTime(c.updatedAt || c.dateCreation || c.createdAt || c.dateDernierStatut);
+              const clientName = getClientDisplayName(c);
+              
+              return (
+                <div 
+                  key={c.id} 
+                  onClick={() => navigate(`/admin/commandes/${c.id}`)}
+                  className="p-5 active:bg-gray-50 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-primary-500 border border-border/50">
+                          <FileText size={18} />
+                       </div>
+                       <div>
+                          <p className="text-sm font-black text-text-primary tracking-tight">#{c.numeroCommande}</p>
+                          <p className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{date} • {time}</p>
+                       </div>
+                    </div>
+                    <StatusBadge status={c.status} size="sm" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                     <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1">Destinataire</p>
+                        <p className="text-xs font-black text-text-primary truncate">{clientName}</p>
+                        <p className="text-[9px] text-text-muted font-bold mt-0.5">{getClientPhone(c)}</p>
+                     </div>
+                     <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1">Facturation</p>
+                        <p className="text-xs font-black text-primary-600">{c.montantTotal?.toLocaleString()} DH</p>
+                        <p className="text-[9px] text-text-muted font-bold mt-0.5 uppercase">{c.modePaiement || 'Espèces'}</p>
+                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-text-muted bg-gray-50 px-3 py-2 rounded-lg">
+                     <div className="flex items-center gap-2">
+                        <Package size={12} />
+                        <span>{c.commandeTapis?.reduce((sum, item) => sum + (item.quantite || 1), 0) || 0} Articles</span>
+                     </div>
+                     <ChevronRight size={14} className="text-primary-500" />
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-20 text-center opacity-40">
+               <ClipboardList size={40} className="mx-auto mb-3" />
+               <p className="text-[10px] font-black uppercase tracking-widest">Aucun résultat</p>
+            </div>
+          )}
+        </div>
+
+        {/* DESKTOP TABLE VIEW */}
+        <div className="hidden lg:block overflow-x-auto min-h-[400px]">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-background">
-                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Référence</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Client</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Date / Heure</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Articles</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest">Montant</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-text-muted uppercase tracking-widest text-center">Statut</th>
+              <tr className="bg-gray-50/50">
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Flux / Référence</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Contact Client</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Horodatage</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] text-center">Volume</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Facturation</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] text-center">Statut</th>
                 <th className="px-6 py-4"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border relative">
+            <tbody className="divide-y divide-border/50 relative">
               {loading && Array.isArray(commandes) && commandes.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-24 text-center">
-                    <Loader2 size={40} className="animate-spin text-primary-200 mx-auto mb-4" />
-                    <p className="text-text-muted font-medium">Chargement des données...</p>
+                  <td colSpan="7" className="py-32 text-center">
+                    <div className="flex flex-col items-center">
+                       <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mb-4">
+                          <Loader2 size={32} className="animate-spin text-primary-500" />
+                       </div>
+                       <p className="text-xs font-black text-text-muted uppercase tracking-widest">Indexation des données...</p>
+                    </div>
                   </td>
                 </tr>
               ) : Array.isArray(commandes) && commandes.length > 0 ? (
-                commandes.map((c) => (
-                  <tr 
-                    key={c.id} 
-                    onClick={() => navigate(`/admin/commandes/${c.id}`)}
-                    className="group hover:bg-primary-50/30 transition-all cursor-pointer"
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-background border border-border group-hover:border-primary-200 flex items-center justify-center text-primary-600 transition-colors">
-                          <FileText size={20} />
+                commandes.map((c) => {
+                  const { date, time } = formatDateTime(c.updatedAt || c.dateCreation || c.createdAt || c.dateDernierStatut);
+                  const clientName = getClientDisplayName(c);
+                  
+                  return (
+                    <tr 
+                      key={c.id} 
+                      onClick={() => navigate(`/admin/commandes/${c.id}`)}
+                      className="group hover:bg-gray-50/80 transition-all cursor-pointer border-l-4 border-l-transparent hover:border-l-primary-500"
+                    >
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-2xl bg-gray-50 border border-border group-hover:bg-primary-50 group-hover:border-primary-100 flex items-center justify-center text-text-muted group-hover:text-primary-600 transition-all">
+                            <FileText size={18} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-text-primary tracking-tight group-hover:text-primary-600 transition-colors">#{c.numeroCommande}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                               <Package size={10} className="text-text-muted" />
+                               <span className="text-[9px] text-text-muted font-black uppercase tracking-widest">{c.id.toString().substring(0, 8)}...</span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-black text-text-primary group-hover:text-primary-600 transition-colors">#{c.numeroCommande}</p>
-                          <p className="text-[10px] text-text-muted mt-0.5 uppercase font-bold tracking-tighter">ID: {c.id}</p>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                           <div className={`w-9 h-9 rounded-2xl flex items-center justify-center text-[10px] font-black shadow-inner ${getAvatarColor(clientName)}`}>
+                              {getInitials(clientName)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-text-primary tracking-tight truncate max-w-[140px]">{clientName}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5 group/phone">
+                               <Phone size={10} className="text-text-muted group-hover/phone:text-primary-500 transition-colors" />
+                               <p className="text-[10px] text-text-muted font-bold group-hover/phone:text-text-secondary transition-colors">{getClientPhone(c)}</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-bold">
-                            {c.client?.nom?.[0]?.toUpperCase() || 'C'}
+                      </td>
+                      <td className="px-6 py-5">
+                         <div>
+                            <p className="text-sm font-black text-text-primary tracking-tight">{date}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                               <Clock size={10} className="text-text-muted" />
+                               <p className="text-[10px] text-text-muted font-bold tracking-widest opacity-80 uppercase">{time}</p>
+                            </div>
+                          </div>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-1.5 rounded-xl bg-gray-50 border border-border/80 text-[11px] font-black text-text-secondary shadow-sm">
+                          {c.commandeTapis?.reduce((sum, item) => sum + (item.quantite || 1), 0) || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="bg-gray-50 px-3 py-2 rounded-xl border border-border/50 inline-block shadow-sm">
+                           <p className="text-sm font-black text-text-primary">{c.montantTotal?.toLocaleString()} <span className="text-[10px] text-text-muted">DH</span></p>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-text-primary">{c.client?.nom || 'Inconnu'}</p>
-                          <p className="text-[10px] text-text-muted font-medium">{c.client?.telephone || 'No phone'}</p>
+                        <p className="text-[9px] text-text-muted font-black uppercase tracking-[0.1em] mt-1.5 px-1">{c.modePaiement || 'Espèces'}</p>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex justify-center scale-90 group-hover:scale-100 transition-transform">
+                          <StatusBadge status={c.status} />
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <p className="text-sm font-semibold text-text-primary">
-                        {new Date(c.dateCreation).toLocaleDateString('fr-FR')}
-                      </p>
-                      <p className="text-[10px] text-text-muted font-medium mt-0.5">
-                        {new Date(c.dateCreation).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className="inline-flex items-center justify-center px-2 py-1 rounded-lg bg-background border border-border text-[10px] font-black text-text-secondary">
-                        {c.commandeItems?.length || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <p className="text-sm font-black text-text-primary">{c.montantTotal?.toLocaleString()} DH</p>
-                      <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider mt-0.5">{c.modePaiement || 'Espèces'}</p>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex justify-center">
-                        <StatusBadge status={c.status} />
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end">
-                        <div className="p-2 rounded-lg bg-background text-text-muted group-hover:bg-primary-600 group-hover:text-white transition-all">
-                           <RefreshCw size={14} />
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end">
+                           <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-text-muted group-hover:bg-primary-500 group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary-500/30 transition-all active:scale-90">
+                              <ChevronRight size={18} />
+                           </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                   <td colSpan="7" className="py-24 text-center">
-                    <ClipboardList size={48} className="text-text-muted/20 mx-auto mb-4" />
-                    <p className="text-text-primary font-bold">Aucune commande trouvée</p>
-                    <p className="text-sm text-text-muted mt-1">Essayez de modifier vos filtres ou de rafraîchir la page.</p>
+                   <td colSpan="7" className="py-32 text-center bg-gray-50/20">
+                    <div className="max-w-[200px] mx-auto opacity-40">
+                       <ClipboardList size={48} className="text-text-muted mx-auto mb-4" />
+                       <p className="text-xs font-black text-text-primary uppercase tracking-widest mb-1">Base de données vide</p>
+                       <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest leading-relaxed">Aucun enregistrement ne correspond à vos critères de recherche.</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -309,17 +433,16 @@ export default function AllCommandes() {
         </div>
 
         {/* PAGINATION / FOOTER INFO */}
-        <div className="p-4 bg-background/50 border-t border-border flex items-center justify-between">
-          <p className="text-xs text-text-muted font-medium">
-            Affichage de <span className="text-text-primary font-bold">{commandes?.length || 0}</span> résultats
+        <div className="p-5 bg-gray-50/50 border-t border-border flex items-center justify-between">
+          <p className="text-[10px] text-text-muted font-bold uppercase tracking-[0.1em]">
+            Index <span className="text-text-primary font-black px-2 py-1 bg-white border border-border rounded-lg ml-1">01 - {commandes?.length || 0}</span>
           </p>
           <div className="flex gap-2">
-             <button disabled className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold opacity-50">Précédent</button>
-             <button disabled className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold opacity-50">Suivant</button>
+             <button disabled className="px-4 py-2 rounded-xl border border-border text-[10px] font-black uppercase tracking-widest opacity-50 bg-white">Précédent</button>
+             <button disabled className="px-4 py-2 rounded-xl border border-border text-[10px] font-black uppercase tracking-widest opacity-50 bg-white shadow-sm">Suivant</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

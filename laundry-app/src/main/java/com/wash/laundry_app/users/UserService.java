@@ -7,7 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
+import org.springframework.security.authentication.DisabledException;
 
 import java.util.Collections;
 
@@ -24,6 +24,11 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         var user = userRepository.findByEmail(email).orElseThrow(()->new UsernameNotFoundException("User not found "));
+
+        Boolean isActive = user.getIsActive();
+        if (isActive != null && !isActive) {
+            throw new DisabledException("Compte désactivé. Contactez votre administrateur.");
+        }
 
         return new User(
                 user.getEmail(),

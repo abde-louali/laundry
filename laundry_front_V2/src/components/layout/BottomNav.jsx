@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, UserPlus, Package, User, Wrench, XCircle, Shield, Users, RefreshCw } from 'lucide-react';
+import { Home, Truck, Users, Package, Wrench, XCircle, Shield, RefreshCw, ClipboardList } from 'lucide-react';
 
 const BottomNav = ({ user }) => {
   const location = useLocation();
@@ -15,11 +15,11 @@ const BottomNav = ({ user }) => {
   ];
 
   const livreurLinks = [
-    { name: 'Home', path: '/livreur/dashboard', icon: Home },
-    { name: 'Gestion', path: '/livreur/register-client', icon: UserPlus },
-    { name: 'Collecte', path: '/livreur/create-order', icon: Package },
-    { name: 'Prêtes', path: '/livreur/ready-for-delivery', icon: ClipboardList },
-    { name: 'Annulées', path: '/livreur/canceled-deliveries', icon: XCircle },
+    { name: 'Dashboard', path: '/livreur', icon: Home },
+    { name: 'Livraisons', path: '/livreur/delivery', icon: Truck },
+    { name: 'Commandes', path: '/livreur/orders', icon: Package },
+    { name: 'Clients', path: '/livreur/clients', icon: Users },
+    { name: 'Annulées', path: '/livreur/canceled', icon: XCircle },
   ];
 
   const employeLinks = [
@@ -30,7 +30,7 @@ const BottomNav = ({ user }) => {
   const links = user?.role === 'admin' ? adminLinks : user?.role === 'livreur' ? livreurLinks : user?.role === 'employe' ? employeLinks : [];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-surface border-t border-border flex items-center justify-around px-2 shadow-modal">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] h-16 bg-white/95 backdrop-blur-md border-t border-border/60 flex items-center justify-evenly px-4 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] pb-safe">
       {links.map((link) => {
         const Icon = link.icon;
         const isActive = location.pathname === link.path;
@@ -39,24 +39,26 @@ const BottomNav = ({ user }) => {
           <Link
             key={link.path}
             to={link.path}
-            className={`relative flex flex-col items-center justify-center min-w-[64px] transition-all duration-200 ${isActive
+            className={`relative flex flex-col items-center justify-center min-w-[56px] py-1 transition-all duration-300 ${isActive
               ? 'text-primary-600'
               : 'text-text-muted hover:text-text-primary'
               }`}
           >
-            <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-primary-50' : ''}`}>
+            <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary-50 scale-110 shadow-sm' : 'active:scale-90'}`}>
               <Icon
-                size={20}
-                className={`transition-transform ${isActive ? 'scale-110' : ''}`}
+                size={22}
+                strokeWidth={isActive ? 2.5 : 2}
+                className="transition-transform"
               />
             </div>
             
-            {isActive && (
-              <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
-            )}
-            <span className={`text-[10px] font-bold mt-0.5 transition-all ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+            <span className={`text-[9px] font-black mt-1 uppercase tracking-tighter transition-all duration-300 ${isActive ? 'opacity-100 translate-y-0 text-primary-700' : 'opacity-60 translate-y-0.5'}`}>
               {link.name}
             </span>
+
+            {isActive && (
+              <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-primary-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]" />
+            )}
           </Link>
         );
       })}

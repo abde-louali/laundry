@@ -26,7 +26,15 @@ public class FileStorageService {
         }
     }
 
+    private static final java.util.Set<String> ALLOWED_TYPES = java.util.Set.of(
+            "image/jpeg", "image/png", "image/webp", "image/gif"
+    );
+
     public String storeFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
+            throw new FileStorageException("Type de fichier non autorisé. Seules les images sont acceptées.");
+        }
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
         String fileName = UUID.randomUUID().toString() + "_" + originalFileName;
 
@@ -40,7 +48,7 @@ public class FileStorageService {
 
             return fileName;
         } catch (IOException ex) {
-            throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
+            throw new FileStorageException("Could not store file " + fileName + ". Please try again!");
         }
     }
 }

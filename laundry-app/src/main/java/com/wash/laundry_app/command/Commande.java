@@ -67,6 +67,32 @@ public class Commande {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Explicit Getters/Setters to bypass Lombok failures
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Client getClient() { return client; }
+    public void setClient(Client client) { this.client = client; }
+    public User getLivreur() { return livreur; }
+    public void setLivreur(User livreur) { this.livreur = livreur; }
+    public String getNumeroCommande() { return numeroCommande; }
+    public void setNumeroCommande(String numeroCommande) { this.numeroCommande = numeroCommande; }
+    public CommandeStatus getStatus() { return status; }
+    public void setStatus(CommandeStatus status) { this.status = status; }
+    public LocalDateTime getDateCreation() { return dateCreation; }
+    public void setDateCreation(LocalDateTime dateCreation) { this.dateCreation = dateCreation; }
+    public LocalDateTime getDateValidation() { return dateValidation; }
+    public void setDateValidation(LocalDateTime dateValidation) { this.dateValidation = dateValidation; }
+    public LocalDateTime getDateLivraison() { return dateLivraison; }
+    public void setDateLivraison(LocalDateTime dateLivraison) { this.dateLivraison = dateLivraison; }
+    public BigDecimal getMontantTotal() { return montantTotal; }
+    public void setMontantTotal(BigDecimal montantTotal) { this.montantTotal = montantTotal; }
+    public ModePaiement getModePaiement() { return modePaiement; }
+    public void setModePaiement(ModePaiement modePaiement) { this.modePaiement = modePaiement; }
+    public LocalDateTime getDatePaiement() { return datePaiement; }
+    public void setDatePaiement(LocalDateTime datePaiement) { this.datePaiement = datePaiement; }
+    public List<CommandeTapis> getCommandeTapis() { return commandeTapis; }
+    public void setCommandeTapis(List<CommandeTapis> commandeTapis) { this.commandeTapis = commandeTapis; }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -107,6 +133,7 @@ public class Commande {
     public void recalculateTotal() {
         this.montantTotal = commandeTapis.stream()
                 .map(CommandeTapis::getSousTotal)
+                .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

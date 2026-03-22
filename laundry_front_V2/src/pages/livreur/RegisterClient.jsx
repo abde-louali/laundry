@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  User, Phone, MapPin, Navigation, PlusCircle, Locate,
-  Search, UserPlus, ChevronRight, UserCheck, Trash2, CheckCircle2
+  UserPlus, Search, QrCode, UserCircle, MapPin, 
+  Target, Info, Phone, Send, User, ChevronRight,
+  CheckCircle2, Loader2, X, Plus, AlertCircle
 } from 'lucide-react';
 import { registerClient, searchClient } from '../../store/livreur/livreurThunk';
 import { selectLoading, selectSearchResult } from '../../store/livreur/livreurSelectors';
@@ -15,300 +16,380 @@ export default function RegisterClient() {
   const navigate = useNavigate();
   const loading = useSelector(selectLoading);
   const searchResult = useSelector(selectSearchResult);
+  const formRef = useRef(null);
 
-  const [viewMode, setViewMode] = useState('search');
-  const [phoneQuery, setPhoneQuery] = useState('');
+  const [searchPhone, setSearchPhone] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    phones: [{ phoneNumber: '' }],
-    addresses: [{ address: '', latitude: '', longitude: '', notes: '' }],
+    phone1: '',
+    phone2: '',
+    quartier: '',
+    rue: '',
+    immeuble: '',
+    appartement: '',
+    notes: '',
+    latitude: '',
+    longitude: ''
   });
   const [isLocating, setIsLocating] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
+  // Debounced Search Effect
   useEffect(() => {
-    if (viewMode === 'register' && phoneQuery && formData.phones[0].phoneNumber === '') {
-      const newPhones = [...formData.phones];
-      newPhones[0].phoneNumber = phoneQuery;
-      setFormData(prev => ({ ...prev, phones: newPhones }));
-    }
-  }, [viewMode]);
+    const timer = setTimeout(() => {
+      if (searchPhone.length >= 8) {
+        dispatch(searchClient(searchPhone));
+      } else {
+        dispatch(clearSearchResult());
+      }
+    }, 300);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!phoneQuery) return toast.warning('Entrez un numéro');
-    try {
-      const result = await dispatch(searchClient(phoneQuery)).unwrap();
-      if (!result?.found) toast.info('Aucun client trouvé avec ce numéro.');
-    } catch (err) {
-      toast.error(err || 'Erreur de recherche');
-    }
-  };
+    return () => clearTimeout(timer);
+  }, [searchPhone, dispatch]);
 
   const handleSelectExisting = (client) => {
     dispatch(setPendingClient(client));
     toast.success(`Client ${client.name} sélectionné !`);
-    navigate('/livreur/create-order');
+    navigate('/livreur/orders');
   };
 
-  const handleSetCurrentLocation = (index) => {
+  const handleCaptureGPS = () => {
     setIsLocating(true);
     if (!navigator.geolocation) {
-      toast.error('Géolocalisation non supportée'); setIsLocating(false); return;
+      toast.error('Géolocalisation non supportée par votre navigateur');
+      setIsLocating(false);
+      return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        updateAddressField(index, 'latitude', pos.coords.latitude.toString());
-        updateAddressField(index, 'longitude', pos.coords.longitude.toString());
+        setFormData(prev => ({
+          ...prev,
+          latitude: pos.coords.latitude.toFixed(4),
+          longitude: pos.coords.longitude.toFixed(4)
+        }));
         setIsLocating(false);
-        toast.success('Position capturée !');
+        toast.success('Position GPS capturée !');
       },
-      () => { toast.error('Erreur de géolocalisation'); setIsLocating(false); },
+      (err) => {
+        toast.error('Erreur de géolocalisation: ' + err.message);
+        setIsLocating(false);
+      },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
-  const handleSubmitRegister = async (e) => {
+  const handleShowForm = () => {
+    setShowForm(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.phones[0].phoneNumber || !formData.addresses[0].address) {
-      return toast.error('Veuillez remplir les champs obligatoires');
+
+    // Validation
+    if (!formData.name || !formData.phone1 || !formData.quartier || !formData.rue) {
+      return toast.warning('Veuillez remplir tous les champs obligatoires (*)');
     }
+
+    // Prepare data for backend
+    // Mapping our flat form to the nested structure the backend expects
+    const clientData = {
+      name: formData.name,
+      phones: [
+        { phoneNumber: formData.phone1 },
+        ...(formData.phone2 ? [{ phoneNumber: formData.phone2 }] : [])
+      ],
+      addresses: [
+        {
+          address: `${formData.immeuble ? 'Imm ' + formData.immeuble + ', ' : ''}${formData.appartement ? 'Appt ' + formData.appartement + ', ' : ''}${formData.rue}, ${formData.quartier}`,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          notes: formData.notes
+        }
+      ]
+    };
+
     try {
-      await dispatch(registerClient(formData)).unwrap();
-      toast.success('Client enregistré avec succès');
-      navigate('/livreur/create-order');
+      await dispatch(registerClient(clientData)).unwrap();
+      toast.success('Client enregistré et sélectionné !');
+      navigate('/livreur/orders');
     } catch (err) {
-      toast.error(err || "Erreur lors de l'enregistrement");
+      toast.error(err || 'Erreur lors de la création du client');
     }
   };
 
-  const addPhoneField = () => setFormData(p => ({ ...p, phones: [...p.phones, { phoneNumber: '' }] }));
-  const removePhoneField = (i) => { if (formData.phones.length > 1) setFormData(p => ({ ...p, phones: p.phones.filter((_, idx) => idx !== i) })); };
-  const updatePhoneField = (i, val) => { const arr = [...formData.phones]; arr[i].phoneNumber = val; setFormData(p => ({ ...p, phones: arr })); };
-  const addAddressField = () => setFormData(p => ({ ...p, addresses: [...p.addresses, { address: '', latitude: '', longitude: '', notes: '' }] }));
-  const removeAddressField = (i) => { if (formData.addresses.length > 1) setFormData(p => ({ ...p, addresses: p.addresses.filter((_, idx) => idx !== i) })); };
-  const updateAddressField = (i, field, val) => { const arr = [...formData.addresses]; arr[i][field] = val; setFormData(p => ({ ...p, addresses: arr })); };
-
   return (
-    <div className="max-w-xl mx-auto pb-10">
-      {/* Tab Toggle */}
-      <div className="bg-gray-100 rounded-xl p-1 flex mb-6">
-        {[
-          { key: 'search', label: 'Rechercher', icon: Search },
-          { key: 'register', label: 'Nouveau Client', icon: UserPlus },
-        ].map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => { setViewMode(tab.key); if (tab.key === 'search') dispatch(clearSearchResult()); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                viewMode === tab.key ? 'bg-surface shadow-sm text-primary-600' : 'text-text-muted hover:text-text-secondary'
-              }`}
-            >
-              <Icon size={16} />
-              {tab.label}
-            </button>
-          );
-        })}
+    <div className="max-w-5xl mx-auto space-y-6 pb-32 animate-fade-in px-4">
+      
+      {/* PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">Gestion des Clients</h1>
+          <p className="text-sm text-text-muted mt-1">Recherchez un client existant ou créez-en un nouveau.</p>
+        </div>
+        <button 
+          onClick={handleShowForm}
+          className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-black flex items-center gap-2 transition-all shadow-lg shadow-primary-500/20 active:scale-95 whitespace-nowrap"
+        >
+          <UserPlus size={18} strokeWidth={3} /> Nouveau Client
+        </button>
       </div>
 
-      {/* SEARCH MODE */}
-      {viewMode === 'search' && (
-        <div className="space-y-5 animate-fade-in">
-          <div className="bg-surface rounded-2xl shadow-card p-5">
-            <h2 className="text-base font-semibold text-text-primary mb-1">Trouver un client</h2>
-            <p className="text-sm text-text-muted mb-4">Recherchez par numéro de téléphone</p>
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="relative flex-1">
-                <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  type="tel"
-                  placeholder="06XXXXXXXX"
-                  value={phoneQuery}
-                  onChange={e => setPhoneQuery(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm bg-surface focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted min-h-[48px]"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading?.search}
-                className="bg-primary-600 hover:bg-primary-700 text-white rounded-xl px-5 text-sm font-medium flex items-center gap-2 transition-colors min-h-[48px]"
-              >
-                {loading?.search ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Search size={16} />}
-                Rechercher
-              </button>
-            </form>
+      {/* SEARCH SECTION */}
+      <div className="bg-white rounded-2xl shadow-card p-2 mb-6 flex items-center gap-3 border border-border/50">
+        <Search className="text-primary-500 w-5 h-5 ml-3" strokeWidth={2.5} />
+        <input 
+          type="tel"
+          placeholder="Rechercher un client par téléphone (ex: 0612...)"
+          value={searchPhone}
+          onChange={(e) => setSearchPhone(e.target.value)}
+          className="flex-1 py-3 text-sm font-bold placeholder:font-medium placeholder:text-text-muted outline-none bg-transparent"
+        />
+        <button 
+          onClick={() => alert("Scanner de QR Code non disponible pour le moment.")}
+          className="bg-gray-100 hover:bg-gray-200 rounded-xl px-5 py-2.5 text-sm font-black text-text-primary transition-colors flex items-center gap-2"
+        >
+          <QrCode size={18} />
+          <span className="hidden sm:inline">Scanner</span>
+        </button>
+      </div>
+
+      {/* SEARCH RESULT CARD */}
+      {searchResult && (
+        <div className="border-2 border-primary-400 rounded-3xl p-6 mb-8 bg-white flex flex-col sm:flex-row items-center gap-6 shadow-xl animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center shrink-0 shadow-inner">
+            <span className="text-2xl font-black">{searchResult.name?.[0]?.toUpperCase()}</span>
+          </div>
+          
+          <div className="flex-1 text-center sm:text-left min-w-0">
+             <div className="flex flex-col sm:flex-row items-center gap-2 mb-2">
+                <h3 className="text-xl font-black text-text-primary tracking-tight uppercase truncate">{searchResult.name}</h3>
+                <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-green-200">
+                   CLIENT TROUVÉ
+                </span>
+             </div>
+             <div className="space-y-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2 text-text-muted text-sm font-bold">
+                   <Phone size={14} className="text-primary-500" />
+                   {searchResult.phones?.[0]?.phoneNumber}
+                </div>
+                <div className="flex items-center justify-center sm:justify-start gap-2 text-text-muted text-sm font-bold">
+                   <MapPin size={14} className="text-primary-500" />
+                   {searchResult.addresses?.[0]?.address || 'Aucune adresse enregistrée'}
+                </div>
+             </div>
           </div>
 
-          {/* Search Result */}
-          {searchResult && (
-            <div className="bg-surface rounded-2xl shadow-card p-5 animate-fade-in">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-lg flex-shrink-0">
-                  {searchResult.name?.[0]?.toUpperCase()}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Client trouvé</span>
-                  </div>
-                  <h3 className="font-semibold text-text-primary">{searchResult.name}</h3>
-                  {searchResult.phones?.map((p, i) => (
-                    <p key={i} className="text-sm text-text-muted flex items-center gap-1 mt-0.5"><Phone size={12} />{p.phoneNumber}</p>
-                  ))}
-                  {searchResult.addresses?.map((a, i) => (
-                    <p key={i} className="text-sm text-text-muted flex items-center gap-1 mt-0.5"><MapPin size={12} />{a.address}</p>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={() => handleSelectExisting(searchResult)}
-                className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors min-h-[48px]"
-              >
-                <CheckCircle2 size={16} />
-                Sélectionner ce client
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
-
-          {/* No result + create CTA */}
-          {!searchResult && !loading?.search && phoneQuery.length >= 8 && (
-            <div className="bg-surface rounded-2xl shadow-card p-6 flex flex-col items-center text-center">
-              <UserPlus size={36} className="text-text-muted mb-3" />
-              <p className="text-sm text-text-muted mb-3">Aucun client trouvé avec ce numéro</p>
-              <button
-                onClick={() => setViewMode('register')}
-                className="bg-primary-50 text-primary-600 border border-primary-200 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-primary-100 transition-colors"
-              >
-                Créer un nouveau profil
-              </button>
-            </div>
-          )}
+          <button 
+            onClick={() => handleSelectExisting(searchResult)}
+            className="w-full sm:w-auto bg-primary-500 hover:bg-primary-600 text-white rounded-2xl px-8 py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-primary-500/30 flex items-center justify-center gap-3 transition-all active:scale-95"
+          >
+            Choisir et Créer Commande <ChevronRight size={18} strokeWidth={3} />
+          </button>
         </div>
       )}
 
-      {/* REGISTER MODE */}
-      {viewMode === 'register' && (
-        <form onSubmit={handleSubmitRegister} className="space-y-4 animate-fade-in">
+      {/* NOT FOUND TEXT */}
+      {!searchResult && searchPhone.length >= 8 && !loading.search && (
+        <p className="text-center text-xs font-bold text-text-muted uppercase tracking-widest mb-8">
+           Aucun client trouvé pour ce numéro.
+        </p>
+      )}
 
-          {/* Informations Card */}
-          <div className="bg-surface rounded-2xl shadow-card p-5">
-            <h3 className="text-sm font-semibold text-text-primary mb-4">Informations</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-text-primary mb-1.5 block">Nom complet *</label>
-                <div className="relative">
-                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input
-                    type="text" placeholder="Ex: Ahmed Ben Ali"
-                    value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm bg-surface focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted min-h-[48px]"
-                  />
-                </div>
-              </div>
+      {/* NEW CLIENT FORM SECTION */}
+      <div ref={formRef} className={`space-y-6 transition-all duration-700 ${showForm ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+        <div className="flex items-center gap-3 mb-2">
+           <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">Ajouter un Nouveau Client</h2>
+           <div className="h-px flex-1 bg-border/50"></div>
+        </div>
 
-              {/* Phones */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-text-primary">Téléphones *</label>
-                  <button type="button" onClick={addPhoneField} className="text-primary-600 text-xs flex items-center gap-1 hover:text-primary-700">
-                    <PlusCircle size={14} /> Ajouter
-                  </button>
-                </div>
+        {/* INFO BANNER */}
+        <div className="bg-blue-50 border border-blue-100 rounded-[1.5rem] px-6 py-4 flex items-center gap-4">
+           <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-blue-500 shadow-sm border border-blue-100/50">
+              <Info size={20} />
+           </div>
+           <p className="text-xs font-bold text-blue-800 leading-relaxed uppercase tracking-wide">
+              <span className="font-black">Note:</span> La création d'un nouveau client entraîne automatiquement la création d'une commande.
+           </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          {/* LEFT CARD — Informations Personnelles */}
+          <div className="bg-white rounded-[2rem] shadow-card border border-border/50 overflow-hidden">
+             <div className="bg-gray-50/50 px-6 py-5 border-b border-border/50 flex items-center gap-3">
+                <UserCircle className="text-primary-500" size={20} strokeWidth={2.5} />
+                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">Informations Personnelles</h3>
+             </div>
+             
+             <div className="p-8 space-y-6">
                 <div className="space-y-2">
-                  {formData.phones.map((phone, index) => (
-                    <div key={index} className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-                        <input
-                          type="tel" placeholder="06XXXXXXXX"
-                          value={phone.phoneNumber}
-                          onChange={e => updatePhoneField(index, e.target.value)}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted min-h-[48px]"
-                        />
-                      </div>
-                      {formData.phones.length > 1 && (
-                        <button type="button" onClick={() => removePhoneField(index)} className="w-11 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] px-1">NOM COMPLET *</label>
+                   <div className="relative">
+                      <input 
+                        type="text" 
+                        placeholder="Ex: Jean Dupont"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value.toUpperCase()})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-5 py-4 text-sm font-bold focus:bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-50 outline-none transition-all uppercase"
+                      />
+                   </div>
                 </div>
-              </div>
-            </div>
+
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] px-1">TÉLÉPHONE PRINCIPAL *</label>
+                   <div className="relative">
+                      <input 
+                        type="tel" 
+                        placeholder="06 00 00 00 00"
+                        value={formData.phone1}
+                        onChange={(e) => setFormData({...formData, phone1: e.target.value})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-5 py-4 text-sm font-bold focus:bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-50 outline-none transition-all"
+                      />
+                   </div>
+                </div>
+
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] px-1">TÉLÉPHONE SECONDAIRE (OPTIONNEL)</label>
+                   <div className="relative">
+                      <input 
+                        type="tel" 
+                        placeholder="05 00 00 00 00"
+                        value={formData.phone2}
+                        onChange={(e) => setFormData({...formData, phone2: e.target.value})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-5 py-4 text-sm font-bold focus:bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-50 outline-none transition-all"
+                      />
+                   </div>
+                </div>
+             </div>
           </div>
 
-          {/* Address Cards */}
-          {formData.addresses.map((address, index) => (
-            <div key={index} className="bg-surface rounded-2xl shadow-card p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-text-primary">Adresse {index + 1}</h3>
-                {formData.addresses.length > 1 && (
-                  <button type="button" onClick={() => removeAddressField(index)} className="text-red-400 hover:text-red-500 text-xs flex items-center gap-1">
-                    <Trash2 size={14} /> Supprimer
-                  </button>
-                )}
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-text-primary mb-1.5 block">Adresse *</label>
-                  <div className="relative">
-                    <Navigation size={16} className="absolute left-3 top-3.5 text-text-muted" />
-                    <textarea
-                      rows={2} placeholder="Quartier, Rue, Immeuble..."
-                      value={address.address}
-                      onChange={e => updateAddressField(index, 'address', e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 pl-9 text-sm resize-none focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-text-primary mb-1.5 block">Notes (facultatif)</label>
-                  <input
-                    type="text" placeholder="Ex: 2ème étage, porte gauche"
-                    value={address.notes}
-                    onChange={e => updateAddressField(index, 'notes', e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 placeholder:text-text-muted"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleSetCurrentLocation(index)}
-                  disabled={isLocating}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border transition-colors min-h-[48px] ${
-                    address.latitude
-                      ? 'bg-green-50 text-green-600 border-green-200'
-                      : 'bg-primary-50 text-primary-600 border-primary-200 hover:bg-primary-100'
-                  }`}
-                >
-                  {isLocating ? <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Locate size={16} />}
-                  {address.latitude ? `GPS: ${parseFloat(address.latitude).toFixed(4)}, ${parseFloat(address.longitude).toFixed(4)}` : 'Capturer Position GPS'}
-                </button>
-              </div>
-            </div>
-          ))}
+          {/* RIGHT CARD — Adresse de Livraison */}
+          <div className="bg-white rounded-[2rem] shadow-card border border-border/50 overflow-hidden">
+             <div className="bg-gray-50/50 px-6 py-5 border-b border-border/50 flex items-center gap-3">
+                <MapPin className="text-primary-500" size={20} strokeWidth={2.5} />
+                <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">Adresse de Livraison</h3>
+             </div>
 
-          {/* Add address */}
-          <button
-            type="button" onClick={addAddressField}
-            className="w-full border-2 border-dashed border-gray-200 rounded-xl py-3 text-sm text-text-muted hover:border-primary-300 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
-          >
-            <PlusCircle size={16} />
-            Ajouter une adresse
-          </button>
+             <div className="p-8 space-y-6">
+                {/* GPS POSITION ROW */}
+                <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                   <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-primary-100 flex items-center justify-center text-primary-500 shadow-sm shrink-0">
+                         <Target size={20} />
+                      </div>
+                      <div>
+                         <p className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-0.5">POSITION GPS</p>
+                         <p className={`text-sm font-black ${formData.latitude ? 'text-primary-600' : 'text-text-muted'}`}>
+                            {formData.latitude ? `${formData.latitude}° N, ${formData.longitude}° W` : 'Non capturé'}
+                         </p>
+                      </div>
+                   </div>
+                   <button 
+                     type="button"
+                     onClick={handleCaptureGPS}
+                     disabled={isLocating}
+                     className="text-primary-600 text-[11px] font-black uppercase tracking-widest hover:text-primary-700 bg-white px-4 py-2 rounded-lg shadow-sm border border-primary-100 active:scale-95 transition-all"
+                   >
+                     {isLocating ? <Loader2 className="animate-spin" size={16} /> : formData.latitude ? 'Recapturer' : 'Capturer'}
+                   </button>
+                </div>
 
-          <button
-            type="submit"
-            disabled={loading?.registerClient}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white rounded-xl py-3.5 text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm min-h-[48px]"
-          >
-            {loading?.registerClient ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <UserPlus size={16} />}
-            Créer Profil &amp; Continuer
-          </button>
-        </form>
-      )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">QUARTIER *</label>
+                      <input 
+                        type="text" placeholder="Ex: Maarif" 
+                        value={formData.quartier}
+                        onChange={(e) => setFormData({...formData, quartier: e.target.value})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:bg-white focus:border-primary-400 outline-none transition-all uppercase"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">RUE / AVENUE *</label>
+                      <input 
+                        type="text" placeholder="Nom de rue" 
+                        value={formData.rue}
+                        onChange={(e) => setFormData({...formData, rue: e.target.value})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:bg-white focus:border-primary-400 outline-none transition-all uppercase"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">IMMEUBLE / VILLA</label>
+                      <input 
+                        type="text" placeholder="N° Imm" 
+                        value={formData.immeuble}
+                        onChange={(e) => setFormData({...formData, immeuble: e.target.value})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:bg-white focus:border-primary-400 outline-none transition-all uppercase"
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">APPARTEMENT</label>
+                      <input 
+                        type="text" placeholder="N° Appt" 
+                        value={formData.appartement}
+                        onChange={(e) => setFormData({...formData, appartement: e.target.value})}
+                        className="w-full bg-gray-50 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:bg-white focus:border-primary-400 outline-none transition-all uppercase"
+                      />
+                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                   <label className="text-[10px] font-black text-text-muted uppercase tracking-widest px-1">NOTES POUR LE LIVREUR</label>
+                   <textarea 
+                     rows={3} 
+                     placeholder="Précisions d'accès (ex: sonnerie, code porte...)"
+                     value={formData.notes}
+                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                     className="w-full bg-gray-50 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:bg-white focus:border-primary-400 outline-none transition-all resize-none"
+                   />
+                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* SUBMIT BUTTON - MOBILE: STICKY AT BOTTOM ABOVE NAV */}
+        <div className="pt-6 w-full pb-32 md:pb-0">
+          <div className="hidden md:block">
+             <button
+               onClick={handleSubmit}
+               disabled={loading.createClient}
+               className="w-full bg-primary-500 hover:bg-primary-600 text-white rounded-2xl py-8 text-lg font-black uppercase tracking-[0.2em] shadow-xl shadow-primary-500/40 transition-all flex items-center justify-center gap-4 active:scale-95 disabled:opacity-50 group"
+             >
+               {loading.createClient ? (
+                 <Loader2 className="animate-spin" size={24} />
+               ) : (
+                 <>
+                   <Send className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                   Valider et Créer Commande
+                 </>
+               )}
+             </button>
+          </div>
+
+          <div className="md:hidden fixed bottom-[64px] left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-border/60 z-[90] shadow-[0_-10px_25px_rgba(0,0,0,0.05)]">
+             <button
+               onClick={handleSubmit}
+               disabled={loading.createClient}
+               className="w-full bg-primary-500 hover:bg-primary-600 text-white rounded-2xl py-4 flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest shadow-lg shadow-primary-500/20 active:scale-95"
+             >
+               {loading.createClient ? (
+                 <Loader2 className="animate-spin" size={20} />
+               ) : (
+                 <>
+                   <Send size={18} />
+                   Valider et Créer Commande
+                 </>
+               )}
+             </button>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   );
 }

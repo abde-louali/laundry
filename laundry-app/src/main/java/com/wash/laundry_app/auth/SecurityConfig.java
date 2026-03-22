@@ -23,7 +23,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.lang.reflect.Method;
+
 
 @Configuration
 @EnableWebSecurity
@@ -33,6 +33,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -56,16 +57,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // ADD THIS
-                .sessionManagement(c->
-                        c.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .sessionManagement(c->
+                .sessionManagement(c ->
                         c.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(c->c
 
-                                .requestMatchers("/admin/**").hasAnyRole("admin", "ADMIN")
-                                .requestMatchers("/livreur/**").hasAnyRole("livreur", "LIVREUR", "admin", "ADMIN")
-                                .requestMatchers("/employe/**").hasAnyRole("employe", "EMPLOYE", "admin", "ADMIN")
+                                .requestMatchers("/admin/**", "/api/admin/**").hasAnyRole("admin", "ADMIN")
+                                .requestMatchers("/livreur/**", "/api/livreur/**").hasAnyRole("livreur", "LIVREUR", "admin", "ADMIN")
+                                .requestMatchers("/employe/**", "/api/employe/**").hasAnyRole("employe", "EMPLOYE", "admin", "ADMIN")
+                                .requestMatchers("/api/payment-types").authenticated()
 
                                 .requestMatchers(HttpMethod.POST,"/auth/login").permitAll()
                                 .requestMatchers(HttpMethod.POST,"/auth/logout").permitAll()
@@ -75,6 +75,7 @@ public class SecurityConfig {
 
                                 .anyRequest().authenticated()
                 )
+                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(c->
                 {

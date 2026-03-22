@@ -8,6 +8,9 @@ export const selectReadyOrders = (state) => state.livreur.readyOrders
 export const selectPreteCount = (state) => state.livreur.preteCount
 export const selectSeenNotificationIds = (state) => state.livreur.seenNotificationIds
 export const selectCurrentOrder = (state) => state.livreur.currentOrder
+export const selectDashboardStats = (state) => state.livreur.dashboardStats
+export const selectPaymentTypes = (state) => state.livreur.paymentTypes
+export const selectCanceledDeliveries = (state) => state.livreur.canceledDeliveries
 
 // Loading selectors
 export const selectLoading = (state) => state.livreur.loading
@@ -16,6 +19,8 @@ export const selectIsLoadingSearch = (state) => state.livreur.loading.search
 export const selectIsCreatingClient = (state) => state.livreur.loading.createClient
 export const selectIsCreatingOrder = (state) => state.livreur.loading.createOrder
 export const selectIsLoadingReadyForDelivery = (state) => state.livreur.loading.readyForDelivery
+export const selectIsLoadingDashboardStats = (state) => state.livreur.loading.dashboardStats
+export const selectIsLoadingPaymentTypes = (state) => state.livreur.loading.paymentTypes
 
 // Error selectors
 export const selectErrors = (state) => state.livreur.error
